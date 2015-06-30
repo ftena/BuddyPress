@@ -625,8 +625,7 @@ function bp_the_profile_field_value() {
 }
 	function bp_get_the_profile_field_value() {
 		global $field;
-
-		$field->data->value = bp_unserialize_profile_field( $field->data->value );
+		$field->data->value = __(bp_unserialize_profile_field( $field->data->value ), 'bxcft' );
 
 		/**
 		 * Filters the profile field value.
