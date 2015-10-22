@@ -595,6 +595,69 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 	}
 
 	/**
+	 * @group bp_blogs_transition_activity_status
+	 * @group bp_blogs_remove_comment
+	 */
+	public function test_bp_blogs_remove_comment_should_remove_spammed_activity_comment() {
+		// save the current user and override logged-in user
+		$old_user = get_current_user_id();
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+		$userdata = get_userdata( $u );
+
+		// create the blog post
+		$post_id = $this->factory->post->create( array(
+			'post_status' => 'publish',
+			'post_type' => 'post',
+			'post_title' => 'First title',
+		) );
+
+		// let's use activity comments instead of single "new_blog_comment" activity items
+		add_filter( 'bp_disable_blogforum_comments', '__return_false' );
+		$c1 = wp_new_comment( array(
+			'comment_post_ID'      => $post_id,
+			'comment_author'       => $userdata->user_nicename,
+			'comment_author_url'   => 'http://buddypress.org',
+			'comment_author_email' => $userdata->user_email,
+			'comment_content'      => 'this is a blog comment',
+			'comment_type'         => '',
+			'comment_parent'       => 0,
+			'user_id'              => $u,
+		) );
+
+		// save the corresponding activity comment ID
+		$a1 = bp_activity_get_activity_id( array(
+			'type'              => 'activity_comment',
+			'display_comments'  => 'stream',
+			'meta_query'        => array( array(
+				'key'     => 'bp_blogs_post_comment_id',
+				'value'   => $c1,
+			) )
+		) );
+
+		// trash the parent comment.
+		// corresponding activity comment should now be marked as spam
+		// @see bp_blogs_transition_activity_status()
+		wp_trash_comment( $c1 );
+
+		// now permanently delete the comment
+		wp_delete_comment( $c1, true );
+
+		// activity comment should no longer exist
+		$a = bp_activity_get( array(
+			'in'               => $a1,
+			'display_comments' => 'stream',
+			'spam'             => 'all'
+		) );
+		// this is a convoluted way of testing if the activity comment still exists
+		$this->assertTrue( empty( $a['activities'][0] ) );
+
+		// reset
+		$this->set_current_user( $old_user );
+		remove_filter( 'bp_disable_blogforum_comments', '__return_false' );
+	}
+
+	/**
 	 * @group bp_blogs_catch_transition_post_status
 	 */
 	public function test_bp_blogs_is_blog_trackable_false_publish_post() {
@@ -646,6 +709,135 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 		$this->assertFalse( $this->activity_exists_for_post( $post_id ), 'Not public blog post should not have activity' );
 
 		remove_filter( 'bp_is_blog_public', '__return_zero' );
+	}
+
+	/**
+	 * @group bp_blogs_record_comment
+	 * @group unique
+	 */
+	public function test_bp_blogs_record_comment_no_duplicate_activity_comments() {
+		// save the current user and override logged-in user
+		$old_user = get_current_user_id();
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+		$userdata = get_userdata( $u );
+		$this->activity_saved_comment_count = 0;
+		$this->comment_saved_count = 0;
+
+		// let's use activity comments instead of single "new_blog_comment" activity items
+		add_filter( 'bp_disable_blogforum_comments', '__return_false' );
+		add_action( 'bp_activity_add', array( $this, 'count_activity_comment_saved' ) );
+		add_action( 'wp_insert_comment', array( $this, 'count_post_comment_saved' ) );
+		add_action( 'edit_comment', array( $this, 'count_post_comment_saved' ) );
+
+		// create the blog post
+		$post_id = $this->factory->post->create( array(
+			'post_status' => 'publish',
+			'post_type'   => 'post',
+			'post_title'  => 'Test Duplicate activity comments',
+		) );
+
+		// grab the activity ID for the activity comment
+		$a1 = bp_activity_get_activity_id( array(
+			'type'      => 'new_blog_post',
+			'component' => buddypress()->blogs->id,
+			'filter'    => array(
+				'item_id' => get_current_blog_id(),
+				'secondary_item_id' => $post_id
+			),
+		) );
+
+		$a2 = bp_activity_new_comment( array(
+			'content'     => 'activity comment should be unique',
+			'user_id'     => $u,
+			'activity_id' => $a1,
+		) );
+
+		$activities = bp_activity_get( array(
+			'type'             => 'activity_comment',
+			'display_comments' => 'stream',
+			'search_terms'     => 'activity comment should be unique',
+		) );
+
+		$this->assertTrue( count( $activities['activities'] ) === 1, 'An activity comment should be unique' );
+
+		$this->assertTrue( 2 === $this->activity_saved_comment_count, 'An activity comment should be saved only twice' );
+		$this->assertTrue( 1 === $this->comment_saved_count, 'A comment should be saved only once' );
+
+		// reset
+		remove_filter( 'bp_disable_blogforum_comments', '__return_false' );
+		remove_action( 'bp_activity_add', array( $this, 'count_activity_comment_saved' ) );
+		remove_action( 'wp_insert_comment', array( $this, 'count_post_comment_saved' ) );
+		remove_action( 'edit_comment', array( $this, 'count_post_comment_saved' ) );
+
+		$this->activity_saved_comment_count = 0;
+		$this->comment_saved_count = 0;
+		$this->set_current_user( $old_user );
+	}
+
+	/**
+	 * @group bp_blogs_record_comment
+	 */
+	public function test_bp_blogs_record_comment_should_record_parent_blog_post_activity_if_not_found() {
+		// Save the current user and override logged-in user
+		$old_user = get_current_user_id();
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+
+		// Get user details
+		$user = get_userdata( $u );
+
+		// Let's use activity comments instead of single "new_blog_comment" activity items
+		add_filter( 'bp_disable_blogforum_comments', '__return_false' );
+
+		// Create the blog post
+		$post_id = $this->factory->post->create( array(
+			'post_status' => 'publish',
+			'post_type'   => 'post',
+		) );
+
+		// Now, delete the activity item for the blog post
+		bp_activity_delete( array(
+			'component'         => buddypress()->blogs->id,
+			'type'              => 'new_blog_post',
+			'item_id'           => get_current_blog_id(),
+			'secondary_item_id' => $post_id,
+		) );
+
+		// Add a comment to blog post
+		wp_new_comment( array(
+			'comment_post_ID' => $post_id,
+			'user_id' => $u,
+			'comment_content' => 'Dummy comment',
+			'comment_author' => 'Dumbo',
+			'comment_author_url' => 'http://buddypress.org',
+
+			// Important to pass check in bp_blogs_record_comment()
+			'comment_author_email' => $user->user_email
+		) );
+
+		// Fetch the activity ID for the blog post to see if it exists
+		$a1 = bp_activity_get_activity_id( array(
+			'type'      => 'new_blog_post',
+			'component' => buddypress()->blogs->id,
+			'filter'    => array(
+				'item_id' => get_current_blog_id(),
+				'secondary_item_id' => $post_id
+			),
+		) );
+
+		// Assert that activity item for blog post was created after adding a comment
+		$this->assertNotNull( $a1, 'Activity item was not created for existing blog post when recording post comment.' );
+
+		$this->set_current_user( $old_user );
+	}
+
+	public function count_activity_comment_saved() {
+		$this->activity_saved_comment_count += 1;
+	}
+
+	public function count_post_comment_saved() {
+		$this->comment_saved_count += 1;
 	}
 
 	protected function activity_exists_for_post( $post_id ) {

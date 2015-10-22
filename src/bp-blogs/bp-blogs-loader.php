@@ -1,5 +1,4 @@
 <?php
-
 /**
  * BuddyPress Blogs Loader
  *
@@ -8,7 +7,7 @@
  * information from those blogs to make querying blogs in bulk more performant.
  *
  * @package BuddyPress
- * @subpackage Blogs Core
+ * @subpackage BlogsCore
  */
 
 // Exit if accessed directly
@@ -19,7 +18,7 @@ class BP_Blogs_Component extends BP_Component {
 	/**
 	 * Start the blogs component creation process.
 	 *
-	 * @since BuddyPress (1.5.0)
+	 * @since 1.5.0
 	 */
 	public function __construct() {
 		parent::start(
@@ -27,7 +26,8 @@ class BP_Blogs_Component extends BP_Component {
 			__( 'Site Directory', 'buddypress' ),
 			buddypress()->plugin_dir,
 			array(
-				'adminbar_myaccount_order' => 30
+				'adminbar_myaccount_order' => 30,
+				'search_query_arg' => 'sites_search',
 			)
 		);
 	}
@@ -38,7 +38,7 @@ class BP_Blogs_Component extends BP_Component {
 	 * The BP_BLOGS_SLUG constant is deprecated, and only used here for
 	 * backwards compatibility.
 	 *
-	 * @since BuddyPress (1.5.0)
+	 * @since 1.5.0
 	 *
 	 * @see BP_Component::setup_globals() for description of parameters.
 	 *
@@ -78,17 +78,21 @@ class BP_Blogs_Component extends BP_Component {
 		parent::setup_globals( $args );
 
 		/*
-		 * Set up the post post type to track.
+		 * Filters if a blog is public.
 		 *
 		 * In case the config is not multisite, the blog_public option is ignored.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @oaram int $value Whether or not the blog is public.
 		 */
 		if ( 0 !== apply_filters( 'bp_is_blog_public', (int) get_option( 'blog_public' ) ) || ! is_multisite() ) {
 
 			/**
 			 * Filters the post types to track for the Blogs component.
 			 *
-			 * @since BuddyPress (1.5.0)
-			 * @deprecated BuddyPress (2.3.0)
+			 * @since 1.5.0
+			 * @deprecated 2.3.0
 			 *
 			 * @param array $value Array of post types to track.
 			 */
@@ -138,9 +142,9 @@ class BP_Blogs_Component extends BP_Component {
 	 * @see BP_Component::setup_nav() for a description of arguments.
 	 *
 	 * @param array $main_nav Optional. See BP_Component::setup_nav() for
-	 *        description.
-	 * @param array $sub_nav Optional. See BP_Component::setup_nav() for
-	 *        description.
+	 *                        description.
+	 * @param array $sub_nav  Optional. See BP_Component::setup_nav() for
+	 *                        description.
 	 */
 	public function setup_nav( $main_nav = array(), $sub_nav = array() ) {
 
@@ -194,12 +198,14 @@ class BP_Blogs_Component extends BP_Component {
 	/**
 	 * Set up bp-blogs integration with the WordPress admin bar.
 	 *
-	 * @since BuddyPress (1.5.0)
+	 * @since 1.5.0
 	 *
 	 * @see BP_Component::setup_admin_bar() for a description of arguments.
 	 *
 	 * @param array $wp_admin_nav See BP_Component::setup_admin_bar()
-	 *        for description.
+	 *                            for description.
+	 *
+	 * @return bool
 	 */
 	public function setup_admin_bar( $wp_admin_nav = array() ) {
 
@@ -280,7 +286,7 @@ class BP_Blogs_Component extends BP_Component {
 	/**
 	 * Setup cache groups
 	 *
-	 * @since BuddyPress (2.2.0)
+	 * @since 2.2.0
 	 */
 	public function setup_cache_groups() {
 
@@ -295,17 +301,22 @@ class BP_Blogs_Component extends BP_Component {
 	/**
 	 * Set up the tracking arguments for the 'post' post type.
 	 *
-	 * @since BuddyPress (2.2.0)
+	 * @since 2.2.0
 	 *
 	 * @see bp_activity_get_post_type_tracking_args() for information on parameters.
+	 *
+	 * @param object|null $params
+	 * @param string|int  $post_type
+	 *
+	 * @return object
 	 */
 	public function post_tracking_args( $params = null, $post_type = 0 ) {
 
 		/**
 		 * Filters the post types to track for the Blogs component.
 		 *
-		 * @since BuddyPress (1.5.0)
-		 * @deprecated BuddyPress (2.3.0)
+		 * @since 1.5.0
+		 * @deprecated 2.3.0
 		 *
 		 * Make sure plugins still using 'bp_blogs_record_post_post_types'
 		 * to track their post types will generate new_blog_post activities

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * BuddyPress Capabilities.
  *
@@ -7,18 +6,18 @@
  * @subpackage Capabilities
  */
 
-// Exit if accessed directly
+// Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Return an array of roles from the currently loaded blog
+ * Return an array of roles from the currently loaded blog.
  *
  * WordPress roles are dynamically flipped when calls to switch_to_blog() and
  * restore_current_blog() are made, so we use and trust WordPress core to have
  * loaded the correct results for us here. As enhancements are made to
  * WordPress's RBAC, so should our capability functions here.
  *
- * @since BuddyPress (2.1.0)
+ * @since 2.1.0
  *
  * @return array
  */
@@ -33,7 +32,7 @@ function bp_get_current_blog_roles() {
 	/**
 	 * Filters the list of editable roles.
 	 *
-	 * @since BuddyPress (2.1.0)
+	 * @since 2.1.0
 	 *
 	 * @param array $roles List of roles.
 	 */
@@ -42,7 +41,7 @@ function bp_get_current_blog_roles() {
 	/**
 	 * Filters the array of roles from the currently loaded blog.
 	 *
-	 * @since BuddyPress (2.1.0)
+	 * @since 2.1.0
 	 *
 	 * @param array    $roles    Available roles.
 	 * @param WP_Roles $wp_roles Object of WordPress roles.
@@ -55,7 +54,7 @@ function bp_get_current_blog_roles() {
  *
  * This is called on plugin activation.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @uses get_role() To get the administrator, default and moderator roles.
  * @uses WP_Role::add_cap() To add various capabilities.
@@ -81,7 +80,7 @@ function bp_add_caps() {
 	 *
 	 * This is called on plugin activation.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 */
 	do_action( 'bp_add_caps' );
 }
@@ -91,7 +90,7 @@ function bp_add_caps() {
  *
  * This is called on plugin deactivation.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @uses get_role() To get the administrator and default roles.
  * @uses WP_Role::remove_cap() To remove various capabilities.
@@ -117,7 +116,7 @@ function bp_remove_caps() {
 	 *
 	 * This is called on plugin deactivation.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 */
 	do_action( 'bp_remove_caps' );
 }
@@ -125,17 +124,18 @@ function bp_remove_caps() {
 /**
  * Map community caps to built in WordPress caps.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @see WP_User::has_cap() for description of the arguments passed to the
  *      'map_meta_cap' filter.
  * @uses apply_filters() Calls 'bp_map_meta_caps' with caps, cap, user ID and
  *       args.
  *
- * @param array $caps See {@link WP_User::has_cap()}.
- * @param string $cap See {@link WP_User::has_cap()}.
- * @param int $user_id See {@link WP_User::has_cap()}.
- * @param mixed $args See {@link WP_User::has_cap()}.
+ * @param array  $caps    See {@link WP_User::has_cap()}.
+ * @param string $cap     See {@link WP_User::has_cap()}.
+ * @param int    $user_id See {@link WP_User::has_cap()}.
+ * @param mixed  $args    See {@link WP_User::has_cap()}.
+ *
  * @return array Actual capabilities for meta capability. See {@link WP_User::has_cap()}.
  */
 function bp_map_meta_caps( $caps, $cap, $user_id, $args ) {
@@ -143,7 +143,7 @@ function bp_map_meta_caps( $caps, $cap, $user_id, $args ) {
 	/**
 	 * Filters the community caps mapping to be built in WordPress caps.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @param array  $caps    Returns the user's actual capabilities.
 	 * @param string $cap     Capability name.
@@ -156,7 +156,7 @@ function bp_map_meta_caps( $caps, $cap, $user_id, $args ) {
 /**
  * Return community capabilities.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @uses apply_filters() Calls 'bp_get_community_caps' with the capabilities.
  *
@@ -170,7 +170,7 @@ function bp_get_community_caps() {
 	/**
 	 * Filters community capabilities.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @param array $caps Array of capabilities to add. Empty by default.
 	 */
@@ -180,11 +180,12 @@ function bp_get_community_caps() {
 /**
  * Return an array of capabilities based on the role that is being requested.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @uses apply_filters() Allow return value to be filtered.
  *
  * @param string $role The role for which you're loading caps.
+ *
  * @return array Capabilities for $role.
  */
 function bp_get_caps_for_role( $role = '' ) {
@@ -214,7 +215,7 @@ function bp_get_caps_for_role( $role = '' ) {
 	/**
 	 * Filters the array of capabilities based on the role that is being requested.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @param array  $caps Array of capabilities to return.
 	 * @param string $role The role currently being loaded.
@@ -228,7 +229,7 @@ function bp_get_caps_for_role( $role = '' ) {
  * Give a user the default role when creating content on a site they do not
  * already have a role or capability on.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @global BuddyPress $bp Global BuddyPress settings object.
  *
@@ -263,8 +264,8 @@ function bp_set_current_user_default_role() {
 /**
  * Check whether the current user has a given capability.
  *
- * @since BuddyPress (1.6.0)
- * @since BuddyPress (2.4.0) Second argument modified to accept an array, rather than `$blog_id`.
+ * @since 1.6.0
+ * @since 2.4.0 Second argument modified to accept an array, rather than `$blog_id`.
  *
  * @param string    $capability Capability or role name.
  * @param array|int $args {
@@ -272,6 +273,7 @@ function bp_set_current_user_default_role() {
  *     @type int   $blog_id Optional. Blog ID. Defaults to the BP root blog.
  *     @type mixed $a,...   Optional. Extra arguments applicable to the capability check.
  * }
+ *
  * @return bool True if the user has the cap for the given parameters.
  */
 function bp_current_user_can( $capability, $args = array() ) {
@@ -300,8 +302,8 @@ function bp_current_user_can( $capability, $args = array() ) {
 	/**
 	 * Filters whether or not the current user has a given capability.
 	 *
-	 * @since BuddyPress (1.6.0)
-	 * @since BuddyPress (2.4.0) Pass `$args` variable.
+	 * @since 1.6.0
+	 * @since 2.4.0 Pass `$args` variable.
 	 *
 	 * @param bool   $retval     Whether or not the current user has the capability.
 	 * @param string $capability The capability being checked for.
@@ -330,13 +332,15 @@ function bp_current_user_can( $capability, $args = array() ) {
  * Plugin authors: Please do not use this function; thank you. :)
  *
  * @access private
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @see WP_User::has_cap()
  *
- * @param array $allcaps The caps that WP associates with the given role.
- * @param array $caps The caps being tested for in WP_User::has_cap().
- * @param array $args Miscellaneous arguments passed to the user_has_cap filter.
+ * @param array  $caps    The caps that WP associates with the given role.
+ * @param string $cap     The caps being tested for in WP_User::has_cap().
+ * @param int    $user_id ID of the user being checked against.
+ * @param array  $args    Miscellaneous arguments passed to the user_has_cap filter.
+ *
  * @return array $allcaps The user's cap list, with 'bp_moderate' appended, if relevant.
  */
 function _bp_enforce_bp_moderate_cap_for_admins( $caps = array(), $cap = '', $user_id = 0, $args = array() ) {
@@ -368,7 +372,7 @@ add_filter( 'map_meta_cap', '_bp_enforce_bp_moderate_cap_for_admins', 10, 4 );
  *
  * This is called on plugin activation.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  * @deprecated 1.7.0
  */
 function bp_add_roles() {
@@ -380,7 +384,7 @@ function bp_add_roles() {
  *
  * This is called on plugin deactivation.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  * @deprecated 1.7.0
  */
 function bp_remove_roles() {
@@ -394,7 +398,7 @@ function bp_remove_roles() {
  * This is primarily for multisite compatibility when users without roles on
  * sites that have global communities enabled.
  *
- * @since BuddyPress (1.6)
+ * @since 1.6.0
  * @deprecated 1.7.0
  */
 function bp_get_participant_role() {
@@ -404,7 +408,7 @@ function bp_get_participant_role() {
 /**
  * The moderator role for BuddyPress users.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  * @deprecated 1.7.0
  */
 function bp_get_moderator_role() {

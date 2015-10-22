@@ -1,21 +1,20 @@
 <?php
-
 /**
- * BuddyPress Settings Loader
+ * BuddyPress Settings Loader.
  *
  * @package BuddyPress
  * @subpackage SettingsLoader
  */
 
-// Exit if accessed directly
+// Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
 class BP_Settings_Component extends BP_Component {
 
 	/**
-	 * Start the settings component creation process
+	 * Start the settings component creation process.
 	 *
-	 * @since BuddyPress (1.5.0)
+	 * @since 1.5.0
 	 */
 	public function __construct() {
 		parent::start(
@@ -29,7 +28,9 @@ class BP_Settings_Component extends BP_Component {
 	}
 
 	/**
-	 * Include files
+	 * Include files.
+	 *
+	 * @param array $includes Array of values to include. Not used.
 	 */
 	public function includes( $includes = array() ) {
 		parent::includes( array(
@@ -41,12 +42,14 @@ class BP_Settings_Component extends BP_Component {
 	}
 
 	/**
-	 * Setup globals
+	 * Setup globals.
 	 *
 	 * The BP_SETTINGS_SLUG constant is deprecated, and only used here for
 	 * backwards compatibility.
 	 *
-	 * @since BuddyPress (1.5.0)
+	 * @param array $args Array of arguments.
+	 *
+	 * @since 1.5.0
 	 */
 	public function setup_globals( $args = array() ) {
 
@@ -64,6 +67,9 @@ class BP_Settings_Component extends BP_Component {
 
 	/**
 	 * Set up navigation.
+	 *
+	 * @param array $main_nav Array of main nav items.
+	 * @param array $sub_nav  Array of sub nav items.
 	 */
 	public function setup_nav( $main_nav = array(), $sub_nav = array() ) {
 
@@ -143,7 +149,9 @@ class BP_Settings_Component extends BP_Component {
 	}
 
 	/**
-	 * Set up the Toolbar
+	 * Set up the Toolbar.
+	 *
+	 * @param array $wp_admin_nav Array of Admin Bar items.
 	 */
 	public function setup_admin_bar( $wp_admin_nav = array() ) {
 

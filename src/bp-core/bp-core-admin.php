@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Main BuddyPress Admin Class.
  *
@@ -7,10 +6,11 @@
  * @subpackage CoreAdministration
  */
 
-// Exit if accessed directly
+// Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
 if ( !class_exists( 'BP_Admin' ) ) :
+
 /**
  * Load BuddyPress plugin admin area.
  *
@@ -18,7 +18,7 @@ if ( !class_exists( 'BP_Admin' ) ) :
  * @subpackage CoreAdministration
  * @todo Break this apart into each applicable Component
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  */
 class BP_Admin {
 
@@ -75,7 +75,7 @@ class BP_Admin {
 	/**
 	 * The main BuddyPress admin loader.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @uses BP_Admin::setup_globals() Setup the globals needed.
 	 * @uses BP_Admin::includes() Include the required files.
@@ -90,8 +90,7 @@ class BP_Admin {
 	/**
 	 * Set admin-related globals.
 	 *
-	 * @access private
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 */
 	private function setup_globals() {
 		$bp = buddypress();
@@ -113,8 +112,7 @@ class BP_Admin {
 	/**
 	 * Include required files.
 	 *
-	 * @since BuddyPress (1.6.0)
-	 * @access private
+	 * @since 1.6.0
 	 */
 	private function includes() {
 		require( $this->admin_dir . 'bp-core-admin-actions.php'    );
@@ -128,8 +126,7 @@ class BP_Admin {
 	/**
 	 * Set up the admin hooks, actions, and filters.
 	 *
-	 * @access private
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @uses add_action() To add various actions.
 	 * @uses add_filter() To add various filters.
@@ -179,7 +176,7 @@ class BP_Admin {
 	/**
 	 * Add the navigational menu elements.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @uses add_management_page() To add the Recount page in Tools section.
 	 * @uses add_options_page() To add the Forums settings page in Settings
@@ -304,7 +301,7 @@ class BP_Admin {
 	/**
 	 * Register the settings.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
 	 * @uses add_settings_section() To add our own settings section.
 	 * @uses add_settings_field() To add various settings fields.
@@ -319,17 +316,17 @@ class BP_Admin {
 
 		// Hide toolbar for logged out users setting
 		add_settings_field( 'hide-loggedout-adminbar', __( 'Toolbar', 'buddypress' ), 'bp_admin_setting_callback_admin_bar', 'buddypress', 'bp_main' );
-	 	register_setting( 'buddypress', 'hide-loggedout-adminbar', 'intval' );
+		register_setting( 'buddypress', 'hide-loggedout-adminbar', 'intval' );
 
 		// Only show 'switch to Toolbar' option if the user chose to retain the BuddyBar during the 1.6 upgrade
 		if ( (bool) bp_get_option( '_bp_force_buddybar', false ) ) {
 			add_settings_field( '_bp_force_buddybar', __( 'Toolbar', 'buddypress' ), 'bp_admin_setting_callback_force_buddybar', 'buddypress', 'bp_main' );
-		 	register_setting( 'buddypress', '_bp_force_buddybar', 'bp_admin_sanitize_callback_force_buddybar' );
+			register_setting( 'buddypress', '_bp_force_buddybar', 'bp_admin_sanitize_callback_force_buddybar' );
 		}
 
 		// Allow account deletion
 		add_settings_field( 'bp-disable-account-deletion', __( 'Account Deletion', 'buddypress' ), 'bp_admin_setting_callback_account_deletion', 'buddypress', 'bp_main' );
-	 	register_setting( 'buddypress', 'bp-disable-account-deletion', 'intval' );
+		register_setting( 'buddypress', 'bp-disable-account-deletion', 'intval' );
 
 		/** XProfile Section **************************************************/
 
@@ -338,8 +335,15 @@ class BP_Admin {
 			// Add the main section
 			add_settings_section( 'bp_xprofile', _x( 'Profile Settings', 'BuddyPress setting tab', 'buddypress' ), 'bp_admin_setting_callback_xprofile_section', 'buddypress' );
 
+			// Avatars
 			add_settings_field( 'bp-disable-avatar-uploads', __( 'Profile Photo Uploads', 'buddypress' ), 'bp_admin_setting_callback_avatar_uploads', 'buddypress', 'bp_xprofile' );
 			register_setting( 'buddypress', 'bp-disable-avatar-uploads', 'intval' );
+
+			// Cover images
+			if ( bp_is_active( 'xprofile', 'cover_image' ) ) {
+				add_settings_field( 'bp-disable-cover-image-uploads', __( 'Cover Image Uploads', 'buddypress' ), 'bp_admin_setting_callback_cover_image_uploads', 'buddypress', 'bp_xprofile' );
+				register_setting( 'buddypress', 'bp-disable-cover-image-uploads', 'intval' );
+			}
 
 			// Profile sync setting
 			add_settings_field( 'bp-disable-profile-sync',   __( 'Profile Syncing',  'buddypress' ), 'bp_admin_setting_callback_profile_sync', 'buddypress', 'bp_xprofile' );
@@ -360,6 +364,12 @@ class BP_Admin {
 			// Allow group avatars.
 			add_settings_field( 'bp-disable-group-avatar-uploads', __( 'Group Photo Uploads', 'buddypress' ), 'bp_admin_setting_callback_group_avatar_uploads', 'buddypress', 'bp_groups' );
 			register_setting( 'buddypress', 'bp-disable-group-avatar-uploads', 'intval' );
+
+			// Allow group cover images.
+			if ( bp_is_active( 'groups', 'cover_image' ) ) {
+				add_settings_field( 'bp-disable-group-cover-image-uploads', __( 'Group Cover Image Uploads', 'buddypress' ), 'bp_admin_setting_callback_group_cover_image_uploads', 'buddypress', 'bp_groups' );
+				register_setting( 'buddypress', 'bp-disable-group-cover-image-uploads', 'intval' );
+			}
 		}
 
 		/** Forums ************************************************************/
@@ -400,7 +410,7 @@ class BP_Admin {
 	/**
 	 * Add a link to BuddyPress About page to the admin bar.
 	 *
-	 * @since BuddyPress (1.9.0)
+	 * @since 1.9.0
 	 *
 	 * @param WP_Admin_Bar $wp_admin_bar As passed to 'admin_bar_menu'.
 	 */
@@ -418,10 +428,11 @@ class BP_Admin {
 	/**
 	 * Add Settings link to plugins area.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 *
-	 * @param array $links Links array in which we would prepend our link.
-	 * @param string $file Current plugin basename.
+	 * @param array  $links Links array in which we would prepend our link.
+	 * @param string $file  Current plugin basename.
+	 *
 	 * @return array Processed links.
 	 */
 	public function modify_plugin_action_links( $links, $file ) {
@@ -441,7 +452,7 @@ class BP_Admin {
 	/**
 	 * Add some general styling to the admin area.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 */
 	public function admin_head() {
 
@@ -460,7 +471,7 @@ class BP_Admin {
 	/**
 	 * Add some general styling to the admin area.
 	 *
-	 * @since BuddyPress (1.6.0)
+	 * @since 1.6.0
 	 */
 	public function enqueue_scripts() {
 		$min = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
@@ -470,7 +481,7 @@ class BP_Admin {
 		/**
 		 * Filters the BuddyPress Core Admin CSS file path.
 		 *
-		 * @since BuddyPress (1.6.0)
+		 * @since 1.6.0
 		 *
 		 * @param string $file File path for the admin CSS.
 		 */
@@ -488,7 +499,7 @@ class BP_Admin {
 	/**
 	 * Output the about screen.
 	 *
-	 * @since BuddyPress (1.7.0)
+	 * @since 1.7.0
 	 */
 	public function about_screen() {
 	?>
@@ -626,7 +637,7 @@ class BP_Admin {
 	 * Hardcoding this in here is pretty janky. It's fine for now, but we'll
 	 * want to leverage api.wordpress.org eventually.
 	 *
-	 * @since BuddyPress (1.7.0)
+	 * @since 1.7.0
 	 */
 	public function credits_screen() {
 	?>
@@ -719,46 +730,52 @@ class BP_Admin {
 
 			<h4 class="wp-people-group"><?php printf( esc_html__( 'Contributors to BuddyPress %s', 'buddypress' ), self::display_version() ); ?></h4>
 			<p class="wp-credits-list">
-				<a href="https://profiles.wordpress.org/jorbin/">Aaron Jorbin (aaronjorbin)</a>,
+				<a href="https://profiles.wordpress.org/ankit-k-gupta/">Ankit K Gupta</a>,
+				<a href="https://profiles.wordpress.org/anthonyvalera/">anthonyvalera</a>,
 				<a href="https://profiles.wordpress.org/boonebgorges/">Boone B Gorges (boonebgorges)</a>,
-				<a href="https://profiles.wordpress.org/sbrajesh/">Brajesh Singh (sbrajesh)</a>,
-				<a href="https://profiles.wordpress.org/CristinaCannon/">CristinaCannon</a>,
+				<a href="https://profiles.wordpress.org/thebrandonallen/">Brandon Allen (thebrandonallen)</a>,
+				<a href="https://profiles.wordpress.org/BuddyBoss/">BuddyBoss</a>,
+				<a href="https://profiles.wordpress.org/needle/">Christian Wach (needle)</a>,
+				<a href="https://profiles.wordpress.org/damland/">damland</a>,
+				<a href="https://profiles.wordpress.org/danbp/">danbp</a>,
+				<a href="https://profiles.wordpress.org/daniluk4000/">daniluk4000</a>,
+				<a href="https://profiles.wordpress.org/davidtcarson/">David Carson (davidtcarson)</a>,
 				<a href="https://profiles.wordpress.org/dcavins/">David Cavins (dcavins)</a>,
-				<a href="https://profiles.wordpress.org/wpdennis/">Dennis (wpdennis)</a>,
-				<a href="https://profiles.wordpress.org/ocean90/">Dominik Schilling (ocean90)</a>,
-				ecehren,
-				<a href="https://profiles.wordpress.org/finzend/">finzend</a>,
-				<a href="https://profiles.wordpress.org/Mamaduka/">George Mamadashvili (Mamaduka)</a>,
-				<a href="https://profiles.wordpress.org/gregrickaby/">Greg Rickaby (gregrickaby)</a>,
-				<a href="https://profiles.wordpress.org/henrywright/">Henry Wright (henry.wright)</a>,
+				<a href="https://profiles.wordpress.org/valendesigns/">Derek Herman (valendesigns)</a>,
+				<a href="https://profiles.wordpress.org/ganesh641/">ganesh641</a>,
 				<a href="https://profiles.wordpress.org/hnla/">Hugo (hnla)</a>,
-				<a href="https://profiles.wordpress.org/jaimieolmstead/">jaimieolmstead</a>,
+				<a href="https://profiles.wordpress.org/jdgrimes/">J.D. Grimes</a>,
+				<a href="https://profiles.wordpress.org/JeffMatson/">JeffMatson</a>,
+				<a href="https://profiles.wordpress.org/jmarx75/">jmarx75</a>,
 				<a href="https://profiles.wordpress.org/johnjamesjacoby/">John James Jacoby (johnjamesjacoby)</a>,
-				<a href="https://profiles.wordpress.org/jreeve/">jreeve</a>,
-				<a href="https://profiles.wordpress.org/JustinSainton/">Justin Sainton (JustinSainton)</a>,
-				<a href="https://profiles.wordpress.org/kadamwhite/">K.Adam White (kadamwhite)</a>,
+				<a href="https://profiles.wordpress.org/kahless/">Jon Breitenbucher (kahless)</a>,
+				<a href="https://profiles.wordpress.org/jbrinley/">Jonathan Brinley (jbrinley)</a>,
+				<a href="https://profiles.wordpress.org/dunhakdis/">Joseph G. (dunhakdis)</a>,
+				<a href="https://profiles.wordpress.org/lakrisgubben/">lakrisgubben</a>,
+				<a href="https://profiles.wordpress.org/landwire/">landwire</a>,
 				<a href="https://profiles.wordpress.org/Offereins">Laurens Offereins (Offereins)</a>
 				<a href="https://profiles.wordpress.org/lenasterg/">lenasterg</a>,
-				<a href="https://profiles.wordpress.org/natrio/">Marc (natrio)</a>,
-				<a href="https://profiles.wordpress.org/mechter/">Markus Echterhoff (mechter)</a>,
+				<a href="https://profiles.wordpress.org/mrk-1/">m@rk</a>,
+				<a href="https://profiles.wordpress.org/mahype/">mahype</a>,
 				<a href="https://profiles.wordpress.org/imath/">Mathieu Viet (imath)</a>,
-				<a href="https://profiles.wordpress.org/melhop/">melhop</a>,
+				<a href="https://profiles.wordpress.org/mehulkaklotar/">mehulkaklotar</a>,
 				<a href="https://profiles.wordpress.org/mercime/">mercime</a>,
 				<a href="https://profiles.wordpress.org/tw2113/">Michael Beckwith (tw2113)</a>,
+				<a href="https://profiles.wordpress.org/modemlooper/">modemlooper</a>,
 				<a href="https://profiles.wordpress.org/pareshradadiya/">paresh.radadiya (pareshradadiya)</a>,
 				<a href="https://profiles.wordpress.org/DJPaul/">Paul Gibbs (DJPaul)</a>,
-				<a href="https://profiles.wordpress.org/prometheus-fire/">Prometheus Fire</a>,
 				<a href="https://profiles.wordpress.org/r-a-y/">r-a-y</a>,
-				<a href="https://profiles.wordpress.org/rogercoathup/">Roger Coathup (rogercoathup)</a>,
-				<a href="https://profiles.wordpress.org/dtc7240/">Scott Seitz (dtc7240)</a>,
-				<a href="https://profiles.wordpress.org/wonderboymusic/">Scott Taylor (wonderboymusic)</a>.
+				<a href="https://profiles.wordpress.org/ramiy/">Rami Yushuvaev (ramiy)</a>,
+				<a href="https://profiles.wordpress.org/ritteshpatel/">Ritesh Patel (ritteshpatel)</a>,
 				<a href="https://profiles.wordpress.org/SergeyBiryukov/">Sergey Biryukov (SergeyBiryukov)</a>,
 				<a href="https://profiles.wordpress.org/shanebp/">shanebp</a>,
+				<a href="https://profiles.wordpress.org/slaffik/">Slava UA (slaffik)</a>,
 				<a href="https://profiles.wordpress.org/netweb/">Stephen Edgar (netweb)</a>,
 				<a href="https://profiles.wordpress.org/svenl77/">svenl77</a>,
-				<a href="https://profiles.wordpress.org/WeddyWood/">WeddyWood</a>,
-				<a href="https://profiles.wordpress.org/wolfhoundjesse/">wolfhoundjesse</a>,
-				<a href="https://profiles.wordpress.org/xgz/">xgz</a>.
+				<a href="https://profiles.wordpress.org/tanner-m/">Tanner Moushey</a>,
+				<a href="https://profiles.wordpress.org/thomaslhotta/">thomaslhotta</a>,
+				<a href="https://profiles.wordpress.org/vnd/">vnd</a>,
+				<a href="https://profiles.wordpress.org/willgladstone/">willgladstone</a>.
 			</p>
 
 			<h4 class="wp-people-group"><?php _e( 'External Libraries', 'buddypress' ); ?></h4>
@@ -774,9 +791,9 @@ class BP_Admin {
 	}
 
 	/**
-	 * Output welcome text and badge for What's New and Credits pages
+	 * Output welcome text and badge for What's New and Credits pages.
 	 *
-	 * @since BuddyPress (2.2.0)
+	 * @since 2.2.0
 	 */
 	public static function welcome_text() {
 
@@ -798,9 +815,9 @@ class BP_Admin {
 	}
 
 	/**
-	 * Output tab navigation for `What's New` and `Credits` pages
+	 * Output tab navigation for `What's New` and `Credits` pages.
 	 *
-	 * @since BuddyPress (2.2.0)
+	 * @since 2.2.0
 	 * @param string $tab
 	 */
 	public static function tab_navigation( $tab = 'whats_new' ) {
@@ -820,11 +837,12 @@ class BP_Admin {
 	/** Helpers ***************************************************************/
 
 	/**
-	 * Return true/false based on whether a query argument is set
+	 * Return true/false based on whether a query argument is set.
 	 *
 	 * @see bp_do_activation_redirect()
 	 *
-	 * @since BuddyPress (2.2.0)
+	 * @since 2.2.0
+	 *
 	 * @return bool
 	 */
 	public static function is_new_install() {
@@ -832,9 +850,10 @@ class BP_Admin {
 	}
 
 	/**
-	 * Return a user-friendly version-number string, for use in translations
+	 * Return a user-friendly version-number string, for use in translations.
 	 *
-	 * @since BuddyPress (2.2.0)
+	 * @since 2.2.0
+	 *
 	 * @return string
 	 */
 	public static function display_version() {
@@ -866,7 +885,7 @@ endif; // class_exists check
 /**
  * Setup BuddyPress Admin.
  *
- * @since BuddyPress (1.6.0)
+ * @since 1.6.0
  *
  * @uses BP_Admin
  */
