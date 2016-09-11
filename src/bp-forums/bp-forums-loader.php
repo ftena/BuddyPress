@@ -9,11 +9,17 @@
  *
  * @package BuddyPress
  * @subpackage ForumsLoader
+ * @since 1.5.0
  */
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Sets up the forums component.
+ *
+ * @since 1.5.0
+ */
 class BP_Forums_Component extends BP_Component {
 
 	/**
@@ -78,6 +84,8 @@ class BP_Forums_Component extends BP_Component {
 
 	/**
 	 * Include bp-forums files.
+	 *
+	 * @since 1.5.0
 	 *
 	 * @see BP_Component::includes() for description of parameters.
 	 *
@@ -237,6 +245,8 @@ class BP_Forums_Component extends BP_Component {
 
 	/**
 	 * Set up the title for pages and the <title> element.
+	 *
+	 * @since 1.5.0
 	 */
 	public function setup_title() {
 
@@ -262,6 +272,8 @@ class BP_Forums_Component extends BP_Component {
 
 /**
  * Set up the bp-forums component.
+ *
+ * @since 1.6.0
  */
 function bp_setup_forums() {
 	buddypress()->forums = new BP_Forums_Component();

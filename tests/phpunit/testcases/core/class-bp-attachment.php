@@ -59,7 +59,7 @@ class BP_Tests_BP_Attachment_TestCases extends BP_UnitTestCase {
 	 * To avoid copying files in tests, we're faking a succesfull uploads
 	 * as soon as all the test_form have been executed in _wp_handle_upload
 	 */
-	public function upload_error_handler( &$file, $message ) {
+	public function upload_error_handler( $file, $message ) {
 		if ( 'fake_upload_success' !== $message ) {
 			return array( 'error' => $message );
 		} else {
@@ -461,7 +461,7 @@ class BP_Tests_BP_Attachment_TestCases extends BP_UnitTestCase {
 	public function test_bp_attachment_get_image_data() {
 		$image_data = BP_Attachment::get_image_data( BP_TESTS_DIR . 'assets/upside-down.jpg' );
 
-		$this->assertTrue( 3 === $image_data['meta']['orientation'] );
+		$this->assertTrue( 3 == $image_data['meta']['orientation'] );
 	}
 
 	/**

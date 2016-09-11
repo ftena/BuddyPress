@@ -217,6 +217,7 @@ class BP_Tests_Group_Extension_TestCases extends BP_UnitTestCase {
 
 	/**
 	 * @group enable_nav_item
+	 * @expectedIncorrectUsage bp_nav
 	 */
 	public function test_enable_nav_item_true() {
 		$old_options_nav = buddypress()->bp_options_nav;
@@ -239,6 +240,7 @@ class BP_Tests_Group_Extension_TestCases extends BP_UnitTestCase {
 
 	/**
 	 * @group enable_nav_item
+	 * @expectedIncorrectUsage bp_nav
 	 */
 	public function test_enable_nav_item_false() {
 		$old_options_nav = buddypress()->bp_options_nav;
@@ -261,6 +263,7 @@ class BP_Tests_Group_Extension_TestCases extends BP_UnitTestCase {
 
 	/**
 	 * @group visibility
+	 * @expectedIncorrectUsage bp_nav
 	 */
 	public function test_visibility_private() {
 		$old_options_nav = buddypress()->bp_options_nav;
@@ -298,6 +301,7 @@ class BP_Tests_Group_Extension_TestCases extends BP_UnitTestCase {
 
 	/**
 	 * @group visibility
+	 * @expectedIncorrectUsage bp_nav
 	 *
 	 * visibility=public + status=private results in adding the item to
 	 * the nav. However, BP_Groups_Component::setup_globals() bounces the
@@ -840,5 +844,47 @@ class BP_Tests_Group_Extension_TestCases extends BP_UnitTestCase {
 		$this->assertFalse( $e6->user_can_see_nav_item() );
 
 		$this->set_current_user( $old_current_user );
+	}
+
+	/**
+	 * @ticket BP7131
+	 */
+	public function test_widget_on_group_home_page() {
+		$g = $this->factory->group->create( array(
+			'status' => 'public',
+		) );
+		$g_obj = groups_get_group( array( 'group_id' => $g ) );
+
+		$this->go_to( bp_get_group_permalink( $g_obj ) );
+
+		$e1 = new BPTest_Group_Extension_Widget_Method();
+		$e1->_register();
+
+		ob_start();
+		bp_custom_group_boxes();
+		$content = ob_get_clean();
+
+		$this->assertTrue( $content === 'Widget Displayed' );
+	}
+
+	/**
+	 * @ticket BP7131
+	 */
+	public function test_widget_on_group_members_page() {
+		$g = $this->factory->group->create( array(
+			'status' => 'public',
+		) );
+		$g_obj = groups_get_group( array( 'group_id' => $g ) );
+
+		$this->go_to( trailingslashit( bp_get_group_permalink( $g_obj ) ) . 'members/' );
+
+		$e1 = new BPTest_Group_Extension_Widget_Method();
+		$e1->_register();
+
+		ob_start();
+		bp_custom_group_boxes();
+		$content = ob_get_clean();
+
+		$this->assertFalse( $content === 'Widget Displayed' );
 	}
 }

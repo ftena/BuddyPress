@@ -120,7 +120,7 @@ class BP_Tests_Avatars extends BP_UnitTestCase {
 		// Check the returned html to see that it matches an expected value.
 		// Get the correct default avatar, based on whether gravatars are allowed.
 		if ( $params['no_grav'] ) {
-			$avatar_url = bp_core_avatar_default( 'local' );
+			$avatar_url = bp_core_avatar_default( 'local', $params );
 		} else {
 			// This test has the slight odor of hokum since it recreates so much code that could be changed at any time.
 			$bp = buddypress();
@@ -135,13 +135,35 @@ class BP_Tests_Avatars extends BP_UnitTestCase {
 				$default_grav = $bp->grav_default->{$this->params['object']};
 			}
 
-			$avatar_url = $host . md5( strtolower( $this->params['email'] ) ) . '?d=' . $default_grav . '&#038;s=' . $this->params['width'];
+			$avatar_url = $host . md5( strtolower( $this->params['email'] ) );
+
+			// Main Gravatar URL args.
+			$url_args = array(
+				's' => $this->params['width']
+			);
+
+			// Force default.
+			if ( ! empty( $this->params['force_default'] ) ) {
+				$url_args['f'] = 'y';
+			}
 
 			// Gravatar rating; http://bit.ly/89QxZA
 			$rating = strtolower( get_option( 'avatar_rating' ) );
 			if ( ! empty( $rating ) ) {
-				$avatar_url .= "&#038;r={$rating}";
+				$url_args['r'] = $rating;
 			}
+
+			// Default avatar.
+			if ( 'gravatar_default' !== $default_grav ) {
+				$url_args['d'] = $default_grav;
+			}
+
+			// Set up the Gravatar URL.
+			$avatar_url = esc_url( add_query_arg(
+				rawurlencode_deep( array_filter( $url_args ) ),
+				$avatar_url
+			) );
+
 		}
 
 		$expected_html = '<img src="' . $avatar_url . '" id="' . $this->params['css_id'] . '" class="' . $this->params['class'] . ' ' . $this->params['object'] . '-' . $this->params['item_id'] . '-avatar avatar-' . $this->params['width'] . ' photo" width="' . $this->params['width'] . '" height="' . $this->params['height'] . '" alt="' . $this->params['alt'] . '" title="' . $this->params['title'] . '" ' . $this->params['extra_attr'] . ' />';
@@ -291,5 +313,57 @@ class BP_Tests_Avatars extends BP_UnitTestCase {
 		$jpeg = array_shift( $types );
 
 		return $types;
+	}
+
+	/**
+	 * @group BP7056
+	 */
+	public function test_no_grav_default_should_respect_thumb_type() {
+		$found = bp_core_fetch_avatar( array(
+			'item_id' => 12345,
+			'object' => 'user',
+			'type' => 'thumb',
+			'no_grav' => true,
+			'html' => false,
+		) );
+
+		$this->assertContains( 'mystery-man-50.jpg', $found );
+	}
+
+	/**
+	 * @group BP7056
+	 */
+	public function test_no_grav_default_should_return_thumb_avatar_for_small_enough_width() {
+		$found = bp_core_fetch_avatar( array(
+			'item_id' => 12345,
+			'object' => 'user',
+			'type' => 'full',
+			'width' => '50',
+			'no_grav' => true,
+			'html' => false,
+		) );
+
+		$this->assertContains( 'mystery-man-50.jpg', $found );
+	}
+
+	/**
+	 * @group BP7056
+	 */
+	public function test_no_grav_default_should_return_full_avatar_for_thumb_when_thumb_width_is_too_wide() {
+		add_filter( 'bp_core_avatar_thumb_width', array( $this, 'filter_thumb_width' ) );
+		$found = bp_core_fetch_avatar( array(
+			'item_id' => 12345,
+			'object' => 'user',
+			'type' => 'thumb',
+			'no_grav' => true,
+			'html' => false,
+		) );
+		remove_filter( 'bp_core_avatar_thumb_width', array( $this, 'filter_thumb_width' ) );
+
+		$this->assertContains( 'mystery-man.jpg', $found );
+	}
+
+	public function filter_thumb_width() {
+		return 51;
 	}
 }

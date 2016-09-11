@@ -1,111 +1,318 @@
-/**
- * CSS that is always loaded when in wp-admin
- *
- * @since 1.6.0
- */
+/*------------------------------------------------------------------------------
 
-/* Welcome Screen
+This stylesheet is always loaded in wp-admin.
+
+@since 1.6.0
+@since 2.5.0
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS:
+--------------------------------------------------------------------------------
+1.0 Welcome Screen
+	1.1 Version Badge
+	1.2 About Panel
+		1.2.1 Headline Feature
+		1.2.2 Features Section
+		1.2.3 Changelog Section
+2.0 Dashicons
+	2.1 Top level menus
+	2.2 Settings - Components
+	2.3 Tools
+3.0 User's Lists
+4.0 Emails - Edit page
+5.0 Tools - BuddyPress
 ------------------------------------------------------------------------------*/
 
-body.dashboard_page_bp-about span.dashicons,
-body.index_page_bp-about span.dashicons {
-	float: right;
-	clear: right;
-	margin: 15px 0 0 15px ;
-	height: 90px;
-	width: 90px;
-	background-color: #cccccc;
-	-webkit-border-radius: 50%;
-	border-radius: 50%;
-	border: 1px solid #c1c1c1;
-	font-size: 65px;
-	line-height: 90px;
-	color: #999;
+/*------------------------------------------------------------------------------
+ * 1.0 Welcome Screen
+ *----------------------------------------------------------------------------*/
+
+/*
+ * 1.1 Version Badge
+ */
+.bp-badge {
+	color: #d84800;
+	display: inline-block;
+	font: normal 150px/1 'dashicons' !important;
+}
+
+.bp-badge:before {
+	content: "\f448";
+}
+
+.about-wrap .bp-badge {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+@media only screen and (max-width: 500px) {
+	.about-wrap .bp-badge {
+		position: relative;
+		margin: 10px auto;
+		top: auto;
+		left: auto;
+	}
+}
+
+/*
+ * 1.2 About Panel
+ */
+
+/*
+ * 1.2.1 Headline Feature
+ */
+.index_page_bp-about .bp-headline-feature,
+.dashboard_page_bp-about .bp-headline-feature {
+	margin-bottom: 3em;
 	text-align: center;
 }
 
-/* About Page - since 2.3.3 (WP 4.3) */
-
-.about-wrap .two-col > div {
-	position: relative;
-	width: 47.6%;
-	margin-left: 4.799999999%;
-	float: right;
+.index_page_bp-about .bp-headline-feature h3,
+.index_page_bp-about .bp-headline-feature .headline-title,
+.dashboard_page_bp-about .bp-headline-feature h3,
+.dashboard_page_bp-about .bp-headline-feature .headline-title {
+	font-size: 2.2em;
+	line-height: 1.3;
+	margin: 1.25em 0 0.6em;
+	text-align: center;
 }
 
-.about-wrap [class$=col] .last-feature {
+.index_page_bp-about .bp-headline-feature p,
+.dashboard_page_bp-about .bp-headline-feature p {
+	font-size: 1.15em;
+	margin: 1.15em auto 0.6em;
+	max-width: 80%;
+}
+
+.index_page_bp-about .bp-headline-feature .introduction,
+.dashboard_page_bp-about .bp-headline-feature .introduction {
+	font-weight: 600;
+}
+
+
+/*
+ * 1.2.2 Features Section
+ */
+.index_page_bp-about .bp-features-section,
+.dashboard_page_bp-about .bp-features-section {
+	clear: both;
+	margin-bottom: 2em;
+	margin-top: 2em;
+	padding-bottom: 0;
+}
+
+.index_page_bp-about .bp-features-section h3,
+.dashboard_page_bp-about .bp-features-section h3 {
+	font-size: 1.8em;
+	font-weight: normal;
+	line-height: 1.5em;
+	margin: 0 0 0.6em;
+	text-align: center;
+}
+
+.index_page_bp-about .bp-feature,
+.dashboard_page_bp-about .bp-feature {
+	clear: both;
+	overflow: hidden;
+	margin-bottom: 3em;
+	margin-top: 3em;
+}
+
+.index_page_bp-about .bp-feature::after,
+.dashboard_page_bp-about .bp-feature::after {
+	content: '';
+}
+
+.index_page_bp-about .bp-feature h4,
+.dashboard_page_bp-about .bp-feature h4 {
+	color: #23282d;
+	display: inline-block;
+	font-size: 1.25em;
+	margin-bottom: 0.6em;
+	margin-top: 0;
+	width: 47%;
+}
+
+.index_page_bp-about .bp-feature p,
+.dashboard_page_bp-about .bp-feature p {
+	float: right;
+	font-size: 1.15em;
+	width: 47%;
+}
+
+.index_page_bp-about .bp-feature.opposite h4,
+.dashboard_page_bp-about .bp-feature.opposite h4,
+.index_page_bp-about .bp-feature.opposite p,
+.dashboard_page_bp-about .bp-feature.opposite p {
+	float: left;
+}
+
+.index_page_bp-about .bp-feature img,
+.dashboard_page_bp-about .bp-feature img {
+	clear: left;
+	float: left;
+	margin-right: 2.5%;
+	width: 50%;
+	max-width: 50%;
+}
+
+.index_page_bp-about .bp-feature.opposite img,
+.dashboard_page_bp-about .bp-feature.opposite img{
+	clear: right;
+	float: right;
+	margin-right: 0;
+	margin-left: 2.5%;
+}
+
+
+/*
+ * 1.2.3 Changelog Section
+ */
+.index_page_bp-about .bp-changelog-section,
+.dashboard_page_bp-about .bp-changelog-section {
+	border-top: 1px solid #ccc;
+	clear: both;
+	margin-bottom: 3em;
+	margin-top: 2em;
+	padding-bottom: 0;
+}
+
+.index_page_bp-about .bp-changelog-section::after,
+.dashboard_page_bp-about .bp-changelog-section::after {
+	content: '';
+}
+
+.index_page_bp-about .bp-changelog-section .changelog-title,
+.dashboard_page_bp-about .bp-changelog-section .changelog-title {
+	color: #23282d;
+	font-size: 1.8em;
+	font-weight: 300;
+	line-height: 1.5;
+	margin: 1.25em 0 0.6em;
+	text-align: center;
+}
+
+.index_page_bp-about .bp-changelog-section .two-col > div,
+.dashboard_page_bp-about .bp-changelog-section .two-col > div {
+	float: right;
+	margin-left: 4.799999999%;
+	position: relative;
+	width: 47.6%;
+}
+
+.index_page_bp-about .bp-changelog-section .two-col > div.last-feature,
+.dashboard_page_bp-about .bp-changelog-section .two-col > div.last-feature {
 	margin-left: 0;
 }
 
-.about-wrap .feature-list.finer-points h4,
-.about-wrap .feature-list.finer-points p {
-	margin-right: 115px;
+.index_page_bp-about .bp-changelog,
+.dashboard_page_bp-about .bp-changelog {
+	margin-bottom: 3em;
+}
+
+.index_page_bp-about .bp-changelog h4,
+.dashboard_page_bp-about .bp-changelog h4 {
+	font-size: 1.15em;
+	margin-top: 1.5em;
+	margin-bottom: 0.6em;
+}
+
+.index_page_bp-about .bp-changelog p,
+.dashboard_page_bp-about .bp-changelog p {
+	font-size: 1.05em;
+	margin-top: 0.75em;
+}
+
+.bp-assets {
+	clear: both;
+	margin-bottom: 2em;
+	padding-top: 3em;
 }
 
 @media screen and ( max-width: 782px ) {
-	.about-wrap .two-col > div {
+	.index_page_bp-about .bp-headline-feature,
+	.dashboard_page_bp-about .bp-headline-feature {
+		max-width: 100%;
+	}
+	.index_page_bp-about .bp-headline-feature .headline-title,
+	.dashboard_page_bp-about .bp-headline-feature .headline-title {
+		font-size: 1.5em;
+		line-height: 1.5;
+	}
+	.index_page_bp-about .bp-headline-feature p,
+	.dashboard_page_bp-about .bp-headline-feature p {
+		max-width: 100%;
+	}
+	.index_page_bp-about .bp-features-section,
+	.dashboard_page_bp-about .bp-features-section {
+		margin-bottom: 0;
+		margin-top: 2em;
+	}
+	.index_page_bp-about .bp-features-section h3,
+	.dashboard_page_bp-about .bp-features-section h3,
+	.index_page_bp-about .bp-changelog-section .changelog-title,
+	.dashboard_page_bp-about .bp-changelog-section .changelog-title {
+		font-size: 1.8em;
+		font-weight: 300;
+		line-height: 1.5;
+	}
+	.index_page_bp-about .bp-features-section h4,
+	.dashboard_page_bp-about .bp-features-section h4,
+	.index_page_bp-about .bp-changelog-section h4,
+	.dashboard_page_bp-about .bp-changelog-section h4 {
+		font-size: 1.25em;
+		line-height: 1.25;
+		margin-top: 0.6em;
+		text-align: right;
+	}
+	.index_page_bp-about .bp-feature,
+	.dashboard_page_bp-about .bp-feature {
+		margin-bottom: 1em;
+		margin-top: 1em;
+	}
+	.index_page_bp-about .bp-feature h4,
+	.dashboard_page_bp-about .bp-feature h4,
+	.index_page_bp-about .bp-feature p,
+	.dashboard_page_bp-about .bp-feature p {
 		width: 100%;
-		margin: 30px 0 0;
-		padding: 0 0 30px;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 	}
-	body.dashboard_page_bp-about span.dashicons,
-	body.index_page_bp-about span.dashicons {
-		font-size: 55px;
-		line-height: 70px;
-		height: 70px;
-		width: 70px;
+	.index_page_bp-about .bp-feature.opposite h4,
+	.dashboard_page_bp-about .bp-feature.opposite h4,
+	.index_page_bp-about .bp-feature.opposite p,
+	.dashboard_page_bp-about .bp-feature.opposite p {
+		float: none;
 	}
-	.about-wrap .feature-list h2 {
-	  margin: 30px 0 0;
-	  text-align: center;
+	.index_page_bp-about .bp-feature img,
+	.dashboard_page_bp-about .bp-feature img {
+		clear: right;
+		float: none;
+		margin-right: 0;
+		width: 100%;
+		max-width: 100%;
 	}
-	.about-wrap .feature-list.finer-points h4,
-	.about-wrap .feature-list.finer-points p {
-		margin-right: 90px;
+	.index_page_bp-about .bp-feature.opposite img,
+	.dashboard_page_bp-about .bp-feature.opposite img{
+		clear: right;
+		float: none;
+		margin-left: 0;
+	}
+	.index_page_bp-about .bp-changelog-section .two-col > div,
+	.dashboard_page_bp-about .bp-changelog-section .two-col > div {
+		margin-top: 0;
+		padding-bottom: 0.5em;
+		width: 100%;
 	}
 }
 
-/* User's Lists
-------------------------------------------------------------------------------*/
 
-body.site-users-php th#role,
-body.users-php th#role,
-body.users_page_bp-signups th#count_sent {
-	width: 10%;
-}
+/*------------------------------------------------------------------------------
+ * 2.0 Dashicons
+ *----------------------------------------------------------------------------*/
 
-body.site-users-php th#name,
-body.site-users-php th#email,
-body.users-php th#name,
-body.users-php th#registered,
-body.users-php th#email,
-body.users_page_bp-signups th#name,
-body.users_page_bp-signups th#registered,
-body.users_page_bp-signups th#email,
-body.users_page_bp-signups th#date_sent {
-	width: 15%;
-}
-
-body.users-php th#blogs,
-body.users_page_bp-signups th#blogs {
-	width: 20%;
-}
-
-body.users_page_bp-signups th.column-count_sent,
-body.users_page_bp-signups td.count_sent {
-	text-align: center;
-}
-
-/* Tools */
-#adminmenu .toplevel_page_network-tools div.wp-menu-image:before {
-    content: "";
-}
-
-/* Components
-------------------------------------------------------------------------------*/
-
-/* Dashicons */
+/*
+ * 2.1 Top level menus
+ */
 #adminmenu #toplevel_page_bp-activity .wp-menu-image:before,
 #adminmenu #toplevel_page_bp-activity_user .wp-menu-image:before,
 #adminmenu #toplevel_page_bp-activity_network .wp-menu-image:before {
@@ -147,7 +354,9 @@ body.users_page_bp-signups td.count_sent {
 	content: "\f448";
 }
 
-/* Settings - Dashicons (WP 3.8+) */
+/*
+ * 2.2 Settings - Components
+ */
 .settings_page_bp-components td.plugin-title span {
 	float: right;
 	width: 18px;
@@ -196,36 +405,134 @@ body.users_page_bp-signups td.count_sent {
 	content: "\f454";
 }
 
-#bp-admin-component-form .widefat th {
-    display: table-cell;
-    vertical-align: top;
-}
-
-/* Version Badge */
-
-.bp-badge {
-	font: normal 150px/1 'dashicons' !important;
-	color: #D84800;
-	display: inline-block;
-}
-
-.bp-badge:before {
+.settings_page_bp-components tr.core td.plugin-title span:before {
 	content: "\f448";
 }
 
-.about-wrap .bp-badge {
-	position: absolute;
-	top: 0;
-	left: 0;
+.settings_page_bp-components tr.members td.plugin-title span:before {
+	content: "\f307";
 }
 
-/* About Page - since 2.3.3 (WP 4.3) */
+#bp-admin-component-form .wp-list-table.plugins .plugin-title {
+	width: 25%;
+}
 
-@media only screen and (max-width: 500px) {
-	.about-wrap .bp-badge {
-		position: relative;
-		margin: 10px auto;
-		top: auto;
-		left: auto;
+@media screen and ( max-width: 782px ) {
+	.settings_page_bp-components td.plugin-title span {
+		margin-top: 5px;
+	}
+	#bp-admin-component-form .wp-list-table.plugins .plugin-title {
+		display: block;
+		width: auto;
+	}
+	#bp-admin-component-form .subsubsub {
+		margin-bottom: 0;
+		padding-bottom: 35px;
+	}
+}
+
+/*
+ * 2.3 Tools
+ */
+#adminmenu .toplevel_page_network-tools div.wp-menu-image:before {
+	content: "";
+}
+
+
+/*------------------------------------------------------------------------------
+ * 3.0 User's Lists
+ *----------------------------------------------------------------------------*/
+body.site-users-php th#role,
+body.users-php th#role,
+body.users_page_bp-signups th#count_sent {
+	width: 10%;
+}
+
+body.site-users-php th#name,
+body.site-users-php th#email,
+body.users-php th#name,
+body.users-php th#registered,
+body.users-php th#email,
+body.users_page_bp-signups th#name,
+body.users_page_bp-signups th#registered,
+body.users_page_bp-signups th#email,
+body.users_page_bp-signups th#date_sent {
+	width: 15%;
+}
+
+body.users-php th#blogs,
+body.users_page_bp-signups th#blogs {
+	width: 20%;
+}
+
+body.users_page_bp-signups th.column-count_sent,
+body.users_page_bp-signups td.count_sent {
+	text-align: center;
+}
+
+
+/*------------------------------------------------------------------------------
+ * 4.0 Emails - Edit Page
+ *----------------------------------------------------------------------------*/
+body.post-type-bp-email #excerpt {
+	height: auto;
+}
+
+body.post-type-bp-email th#situation {
+	width: 20%;
+}
+
+body.post-type-bp-email td.column-situation ul {
+	margin: 0;
+}
+
+body.post-type-bp-email .categorydiv label {
+	display: block;
+	float: right;
+	padding-right: 25px;
+	text-indent: -25px;
+}
+
+/*------------------------------------------------------------------------------
+ * 5.0 Tools - BuddyPress
+ *----------------------------------------------------------------------------*/
+.tools_page_bp-tools .wrap {
+	max-width: 950px;
+}
+
+.tools_page_bp-tools p {
+	line-height: 2;
+}
+
+.tools_page_bp-tools fieldset {
+	margin: 2em 0 0;
+}
+
+.tools_page_bp-tools legend {
+	color: #23282d;
+	font-size: 1.3em;
+	font-weight: 600px;
+	margin: 1em 0;
+}
+
+.tools_page_bp-tools label {
+	clear: right;
+	display: block;
+	line-height: 1.5em;
+	margin: 0 0 1em;
+	vertical-align: middle;
+}
+
+@media screen and (max-width: 782px) {
+	.tools_page_bp-tools p {
+		line-height: 1.5;
+	}
+	.tools_page_bp-tools label {
+		margin-bottom: 1em;
+		padding-left: 25px;
+		text-indent: -33px;
+	}
+	.tools_page_bp-tools .checkbox {
+		padding: 0 30px 0 0;
 	}
 }

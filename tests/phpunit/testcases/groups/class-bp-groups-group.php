@@ -396,6 +396,33 @@ class BP_Tests_BP_Groups_Group_TestCases extends BP_UnitTestCase {
 
 	/**
 	 * @group get
+	 */
+	public function test_get_with_type_alphabetical() {
+		$time = time();
+		$g1 = $this->factory->group->create( array(
+			'name' => 'A Group',
+			'date_created' => bp_core_current_time(),
+		) );
+		$g2 = $this->factory->group->create( array(
+			'name' => 'D Group',
+			'date_created' => gmdate( 'Y-m-d H:i:s', $time - 100 ),
+		) );
+		$g3 = $this->factory->group->create( array(
+			'name' => 'B Group',
+			'date_created' => gmdate( 'Y-m-d H:i:s', $time - 100000 ),
+		) );
+		$g4 = $this->factory->group->create( array(
+			'name' => 'C Group',
+			'date_created' => gmdate( 'Y-m-d H:i:s', $time - 1000 ),
+		) );
+
+		$groups = BP_Groups_Group::get( array( 'type' => 'alphabetical' ) );
+		$found = wp_parse_id_list( wp_list_pluck( $groups['groups'], 'id' ) );
+		$this->assertEquals( array( $g1, $g3, $g4, $g2 ), $found );
+	}
+
+	/**
+	 * @group get
 	 * @group group_meta_query
 	 * @ticket BP5099
 	 */
@@ -478,6 +505,175 @@ class BP_Tests_BP_Groups_Group_TestCases extends BP_UnitTestCase {
 
 		// Should return top 12 groups only
 		$this->assertEquals( '12', count( $groups['groups'] ) );
+	}
+
+	/**
+	 * @group cache
+	 * @ticket BP5451
+	 * @ticket BP6643
+	 */
+	public function test_get_queries_should_be_cached() {
+		global $wpdb;
+
+		$g = $this->factory->group->create();
+
+		$found1 = BP_Groups_Group::get();
+
+		$num_queries = $wpdb->num_queries;
+
+		$found2 = BP_Groups_Group::get();
+
+		$this->assertEqualSets( $found1, $found2 );
+		$this->assertSame( $num_queries, $wpdb->num_queries );
+	}
+
+	/**
+	 * @group cache
+	 * @ticket BP5451
+	 * @ticket BP6643
+	 */
+	public function test_get_query_caches_should_be_busted_by_groupmeta_update() {
+		global $wpdb;
+
+		$groups = $this->factory->group->create_many( 2 );
+		groups_update_groupmeta( $groups[0], 'foo', 'bar' );
+		groups_update_groupmeta( $groups[1], 'foo', 'bar' );
+
+		$found1 = BP_Groups_Group::get( array(
+			'meta_query' => array(
+				array(
+					'key' => 'foo',
+					'value' => 'bar',
+				),
+			),
+		) );
+
+		$this->assertEqualSets( array( $groups[0], $groups[1] ), wp_list_pluck( $found1['groups'], 'id' ) );
+
+		groups_update_groupmeta( $groups[1], 'foo', 'baz' );
+
+		$found2 = BP_Groups_Group::get( array(
+			'meta_query' => array(
+				array(
+					'key' => 'foo',
+					'value' => 'bar',
+				),
+			),
+		) );
+
+		$this->assertEqualSets( array( $groups[0] ), wp_list_pluck( $found2['groups'], 'id' ) );
+	}
+
+	/**
+	 * @group cache
+	 * @group group_types
+	 * @ticket BP5451
+	 * @ticket BP6643
+	 */
+	public function test_get_query_caches_should_be_busted_by_group_term_change() {
+		global $wpdb;
+
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+
+		$groups = $this->factory->group->create_many( 2 );
+		bp_groups_set_group_type( $groups[0], 'foo' );
+		bp_groups_set_group_type( $groups[1], 'bar' );
+
+		$found1 = BP_Groups_Group::get( array(
+			'group_type' => 'foo',
+		) );
+
+		$this->assertEqualSets( array( $groups[0] ), wp_list_pluck( $found1['groups'], 'id' ) );
+
+		bp_groups_set_group_type( $groups[1], 'foo' );
+
+		$found2 = BP_Groups_Group::get( array(
+			'group_type' => 'foo',
+		) );
+
+		$this->assertEqualSets( array( $groups[0], $groups[1] ), wp_list_pluck( $found2['groups'], 'id' ) );
+	}
+
+	/**
+	 * @group cache
+	 * @group group_types
+	 * @ticket BP5451
+	 * @ticket BP6643
+	 */
+	public function test_get_query_caches_should_be_busted_by_group_term_removal() {
+		global $wpdb;
+
+		bp_groups_register_group_type( 'foo' );
+
+		$groups = $this->factory->group->create_many( 2 );
+		bp_groups_set_group_type( $groups[0], 'foo' );
+		bp_groups_set_group_type( $groups[1], 'foo' );
+
+		$found1 = BP_Groups_Group::get( array(
+			'group_type' => 'foo',
+		) );
+
+		$this->assertEqualSets( array( $groups[0], $groups[1] ), wp_list_pluck( $found1['groups'], 'id' ) );
+
+		bp_groups_remove_group_type( $groups[1], 'foo' );
+
+		$found2 = BP_Groups_Group::get( array(
+			'group_type' => 'foo',
+		) );
+
+		$this->assertEqualSets( array( $groups[0] ), wp_list_pluck( $found2['groups'], 'id' ) );
+	}
+
+	/**
+	 * @group cache
+	 * @ticket BP5451
+	 * @ticket BP6643
+	 */
+	public function test_get_query_caches_should_be_busted_by_group_save() {
+		global $wpdb;
+
+		$groups = $this->factory->group->create_many( 2 );
+		groups_update_groupmeta( $groups[0], 'foo', 'bar' );
+		groups_update_groupmeta( $groups[1], 'foo', 'bar' );
+
+		$found1 = BP_Groups_Group::get( array(
+			'search_terms' => 'Foo',
+		) );
+
+		$this->assertEmpty( $found1['groups'] );
+
+		$group0 = groups_get_group( array( 'group_id' => $groups[0] ) );
+		$group0->name = 'Foo';
+		$group0->save();
+
+		$found2 = BP_Groups_Group::get( array(
+			'search_terms' => 'Foo',
+		) );
+
+		$this->assertEqualSets( array( $groups[0] ), wp_list_pluck( $found2['groups'], 'id' ) );
+	}
+
+	/**
+	 * @group cache
+	 * @ticket BP5451
+	 * @ticket BP6643
+	 */
+	public function test_get_query_caches_should_be_busted_by_group_delete() {
+		global $wpdb;
+
+		$groups = $this->factory->group->create_many( 2 );
+
+		$found1 = BP_Groups_Group::get();
+
+		$this->assertEqualSets( $groups, wp_list_pluck( $found1['groups'], 'id' ) );
+
+		$group0 = groups_get_group( array( 'group_id' => $groups[0] ) );
+		$group0->delete();
+
+		$found2 = BP_Groups_Group::get();
+
+		$this->assertEqualSets( array( $groups[1] ), wp_list_pluck( $found2['groups'], 'id' ) );
 	}
 
 	/** convert_type_to_order_orderby() **********************************/
@@ -563,7 +759,7 @@ class BP_Tests_BP_Groups_Group_TestCases extends BP_UnitTestCase {
 	 */
 	public function test_convert_orderby_to_order_by_term_last_activity() {
 		$c = new _BP_Groups_Group();
-		$this->assertEquals( 'last_activity', _BP_Groups_Group::_convert_orderby_to_order_by_term( 'last_activity' ) );
+		$this->assertEquals( 'gm_last_activity.meta_value', _BP_Groups_Group::_convert_orderby_to_order_by_term( 'last_activity' ) );
 	}
 
 	/**
@@ -571,7 +767,7 @@ class BP_Tests_BP_Groups_Group_TestCases extends BP_UnitTestCase {
 	 */
 	public function test_convert_orderby_to_order_by_term_total_member_count() {
 		$c = new _BP_Groups_Group();
-		$this->assertEquals( 'CONVERT(gm1.meta_value, SIGNED)', _BP_Groups_Group::_convert_orderby_to_order_by_term( 'total_member_count' ) );
+		$this->assertEquals( 'CONVERT(gm_total_member_count.meta_value, SIGNED)', _BP_Groups_Group::_convert_orderby_to_order_by_term( 'total_member_count' ) );
 	}
 
 	/**
@@ -608,6 +804,21 @@ class BP_Tests_BP_Groups_Group_TestCases extends BP_UnitTestCase {
 		self::add_user_to_group( $u, $g1 );
 
 		$groups = BP_Groups_Group::filter_user_groups( 'Cool', $u );
+
+		$found = wp_list_pluck( $groups['groups'], 'group_id' );
+		$this->assertEquals( array( $g1 ), $found );
+	}
+
+	public function test_filter_user_groups_normal_search_middle_of_string() {
+		$g1 = $this->factory->group->create( array(
+			'name' => 'Cool Group',
+			'description' => 'This group is for mandocellos and oboes.',
+		) );
+		$g2 = $this->factory->group->create();
+		$u = $this->factory->user->create();
+		self::add_user_to_group( $u, $g1 );
+
+		$groups = BP_Groups_Group::filter_user_groups( 'cello', $u );
 
 		$found = wp_list_pluck( $groups['groups'], 'group_id' );
 		$this->assertEquals( array( $g1 ), $found );
@@ -1029,17 +1240,356 @@ class BP_Tests_BP_Groups_Group_TestCases extends BP_UnitTestCase {
 
 		$this->set_current_user( $old_user );
 	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_single_value() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => 'foo',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g1 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_array_with_single_value() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => array( 'foo' ),
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g1 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_with_comma_separated_list() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => 'foo, bar',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEqualSets( array( $g1, $g2 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_array_with_multiple_values() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => array( 'foo', 'bar' ),
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEqualSets( array( $g1, $g2 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_should_discart_non_existing_types_in_comma_separated_value() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => 'foo, baz',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g1 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_should_return_empty_when_no_groups_match_specified_types() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => 'foo, baz',
+		) );
+
+		$this->assertEmpty( $groups['groups'] );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__in_single_value() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => 'bar',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g2 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__in_comma_separated_values() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => 'foo, bar',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEqualSets( array( $g1, $g2 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__in_array_multiple_values() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => array( 'foo', 'bar' ),
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEqualSets( array( $g1, $g2 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__in_array_with_single_value() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => array( 'foo' ),
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g1 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__in_should_discart_non_existing_types_in_comma_separated_value() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => 'foo, baz',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g1 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__in_should_return_empty_when_no_groups_match_specified_types() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => 'foo, baz',
+		) );
+
+		$this->assertEmpty( $groups['groups'] );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type_should_take_precedence_over_group_type__in() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__in' => 'foo',
+			'group_type' => 'bar',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g2 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__not_in_should_return_groups_with_types_and_without_types() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		$g3 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__not_in' => 'foo',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g2, $g3 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__not_in_comma_separated_values() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		$g3 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+		bp_groups_set_group_type( $g3, 'baz' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__not_in' => 'foo, bar',
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g3 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__not_array_with_multiple_values() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		$g3 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_register_group_type( 'bar' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'bar' );
+		bp_groups_set_group_type( $g3, 'baz' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__not_in' => array( 'foo', 'bar' ),
+		) );
+
+		$found = wp_list_pluck( $groups['groups'], 'id' );
+		$this->assertEquals( array( $g3 ), $found );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__not_in_should_return_no_results_when_all_groups_mathc_sepecified_type() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		$g3 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'foo' );
+		bp_groups_set_group_type( $g3, 'foo' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type__not_in' => 'foo',
+		) );
+
+		$this->assertEmpty( $groups['groups'] );
+	}
+
+	/**
+	 * @group group_types
+	 */
+	public function test_group_type__not_in_takes_precedence_over_group_type() {
+		$g1 = $this->factory->group->create();
+		$g2 = $this->factory->group->create();
+		$g3 = $this->factory->group->create();
+		bp_groups_register_group_type( 'foo' );
+		bp_groups_set_group_type( $g1, 'foo' );
+		bp_groups_set_group_type( $g2, 'foo' );
+		bp_groups_set_group_type( $g3, 'foo' );
+
+		$groups = BP_Groups_Group::get( array(
+			'group_type' => 'foo',
+			'group_type__not_in' => 'foo',
+		) );
+
+		$this->assertEmpty( $groups['groups'] );
+	}
 }
 
 /**
  * Stub class for accessing protected methods
  */
 class _BP_Groups_Group extends BP_Groups_Group {
-	static public function _convert_type_to_order_orderby( $type ) {
+	public static function _convert_type_to_order_orderby( $type ) {
 		return self::convert_type_to_order_orderby( $type );
 	}
 
-	static public function _convert_orderby_to_order_by_term( $term ) {
+	public static function _convert_orderby_to_order_by_term( $term ) {
 		return self::convert_orderby_to_order_by_term( $term );
 	}
 }

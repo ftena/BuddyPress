@@ -265,7 +265,8 @@ jq(document).ready( function() {
 
 		/* Reset the page */
 		jq.cookie( 'bp-activity-oldestpage', 1, {
-			path: '/'
+			path: '/',
+			secure: ( 'https:' === window.location.protocol )
 		} );
 
 		/* Activity Stream Tabs */
@@ -438,7 +439,8 @@ jq(document).ready( function() {
 
 			if ( null === jq.cookie('bp-activity-oldestpage') ) {
 				jq.cookie('bp-activity-oldestpage', 1, {
-					path: '/'
+					path: '/',
+					secure: ( 'https:' === window.location.protocol )
 				} );
 			}
 
@@ -467,7 +469,8 @@ jq(document).ready( function() {
 			{
 				jq('#buddypress li.load-more').removeClass('loading');
 				jq.cookie( 'bp-activity-oldestpage', oldest_page, {
-					path: '/'
+					path: '/',
+					secure: ( 'https:' === window.location.protocol )
 				} );
 				jq('#buddypress ul.activity-list').append(response.contents);
 
@@ -945,7 +948,7 @@ jq(document).ready( function() {
 		var target = jq(event.target),
 			el,
 			css_id, object, search_terms, pagination_id, template,
-			url_parameters,	page_number,
+			page_number,
 			$gm_search,
 			caller;
 
@@ -970,18 +973,31 @@ jq(document).ready( function() {
 			pagination_id = jq(target).closest('.pagination-links').attr('id');
 			template = null;
 
-			url_parameters = target.attr('href').split( '&' );
-			// The page number is the first parameter.
-			page_number = url_parameters[0].split( '=' );
-			page_number = page_number[1];
-
 			// Search terms
 			if ( jq('div.dir-search input').length ) {
-				search_terms =  jq('.dir-search input').val();
+				search_terms =  jq('.dir-search input');
 
-				if ( ! search_terms && bp_get_querystring('s') ) {
+				if ( ! search_terms.val() && bp_get_querystring( search_terms.attr( 'name' ) ) ) {
 					search_terms = jq('.dir-search input').prop('placeholder');
+				} else {
+					search_terms = search_terms.val();
 				}
+			}
+
+			// Page number
+			if ( jq(target).hasClass('next') || jq(target).hasClass('prev') ) {
+				page_number = jq('.pagination span.current').html();
+			} else {
+				page_number = jq(target).html();
+			}
+
+			// Remove any non-numeric characters from page number text (commas, etc.)
+			page_number = Number( page_number.replace(/\D/g,'') );
+
+			if ( jq(target).hasClass('next') ) {
+				page_number++;
+			} else if ( jq(target).hasClass('prev') ) {
+				page_number--;
 			}
 
 			// The Group Members page has a different selector for
@@ -1743,25 +1759,31 @@ jq(document).ready( function() {
 	/* Clear BP cookies on logout */
 	jq('#wp-admin-bar-logout, a.logout').on( 'click', function() {
 		jq.removeCookie('bp-activity-scope', {
-			path: '/'
+			path: '/',
+			secure: ( 'https:' === window.location.protocol )
 		});
 		jq.removeCookie('bp-activity-filter', {
-			path: '/'
+			path: '/',
+			secure: ( 'https:' === window.location.protocol )
 		});
 		jq.removeCookie('bp-activity-oldestpage', {
-			path: '/'
+			path: '/',
+			secure: ( 'https:' === window.location.protocol )
 		});
 
 		var objects = [ 'members', 'groups', 'blogs', 'forums' ];
 		jq(objects).each( function(i) {
 			jq.removeCookie('bp-' + objects[i] + '-scope', {
-				path: '/'
+				path: '/',
+				secure: ( 'https:' === window.location.protocol )
 			} );
 			jq.removeCookie('bp-' + objects[i] + '-filter', {
-				path: '/'
+				path: '/',
+				secure: ( 'https:' === window.location.protocol )
 			} );
 			jq.removeCookie('bp-' + objects[i] + '-extras', {
-				path: '/'
+				path: '/',
+				secure: ( 'https:' === window.location.protocol )
 			} );
 		});
 	});
@@ -1837,7 +1859,8 @@ jq(document).ready( function() {
 function bp_init_activity() {
 	/* Reset the page */
 	jq.cookie( 'bp-activity-oldestpage', 1, {
-		path: '/'
+		path: '/',
+		secure: ( 'https:' === window.location.protocol )
 	} );
 
 	if ( undefined !== jq.cookie('bp-activity-filter') && jq('#activity-filter-select').length ) {
@@ -1881,13 +1904,16 @@ function bp_filter_request( object, filter, scope, target, search_terms, page, e
 
 	/* Save the settings we want to remain persistent to a cookie */
 	jq.cookie( 'bp-' + object + '-scope', scope, {
-		path: '/'
+		path: '/',
+		secure: ( 'https:' === window.location.protocol )
 	} );
 	jq.cookie( 'bp-' + object + '-filter', filter, {
-		path: '/'
+		path: '/',
+		secure: ( 'https:' === window.location.protocol )
 	} );
 	jq.cookie( 'bp-' + object + '-extras', extras, {
-		path: '/'
+		path: '/',
+		secure: ( 'https:' === window.location.protocol )
 	} );
 
 	/* Set the correct selected nav and filter */
@@ -1945,16 +1971,19 @@ function bp_activity_request(scope, filter) {
 	/* Save the type and filter to a session cookie */
 	if ( null !== scope ) {
 		jq.cookie( 'bp-activity-scope', scope, {
-			path: '/'
+			path: '/',
+			secure: ( 'https:' === window.location.protocol )
 		} );
 	}
 	if ( null !== filter ) {
 		jq.cookie( 'bp-activity-filter', filter, {
-			path: '/'
+			path: '/',
+			secure: ( 'https:' === window.location.protocol )
 		} );
 	}
 	jq.cookie( 'bp-activity-oldestpage', 1, {
-		path: '/'
+		path: '/',
+		secure: ( 'https:' === window.location.protocol )
 	} );
 
 	/* Remove selected and loading classes from tabs */

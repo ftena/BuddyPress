@@ -525,6 +525,89 @@ class BP_Tests_Activity_Template extends BP_UnitTestCase {
 	}
 
 	/**
+	 * @group scope
+	 * @ticket BP6720
+	 */
+	public function test_bp_has_activities_scope_friends_should_respect_id_order_when_record_dates_are_same() {
+		$u1 = $this->factory->user->create();
+		$u2 = $this->factory->user->create();
+
+		friends_add_friend( $u1, $u2, true );
+
+		// Friend's very fast status updates.
+		$a1 = $this->factory->activity->create( array(
+			'user_id' => $u2,
+			'type' => 'activity_update',
+			'recorded_time' => date( 'Y-m-d H:i:s', 1451944920 ),
+		) );
+		$a2 = $this->factory->activity->create( array(
+			'user_id' => $u2,
+			'type' => 'activity_update',
+			'recorded_time' => date( 'Y-m-d H:i:s', 1451944920 ),
+		) );
+
+		global $activities_template;
+		$reset_activities_template = $activities_template;
+
+		// Get activities in 'friends' scope
+		bp_has_activities( array(
+			'user_id' => $u1,
+			'scope' => 'friends',
+		) );
+
+		$found = $activities_template->activities;
+
+		// Clean up!
+		$activities_template = $reset_activities_template;
+
+		$this->assertEquals( array( $a2, $a1 ), wp_list_pluck( $found, 'id' ) );
+	}
+
+	/**
+	 * @group scope
+	 * @ticket BP6720
+	 */
+	public function test_bp_has_activities_scope_groups_should_respect_id_order_when_record_dates_are_same() {
+		$u1 = $this->factory->user->create();
+		$u2 = $this->factory->user->create();
+		$u3 = $this->factory->user->create();
+
+		$g1 = $this->factory->group->create( array( 'creator_id' => $u1 ) );
+
+		// Two user join first user's group same time
+		$a1 = $this->factory->activity->create( array(
+			'user_id'   => $u2,
+			'component' => 'groups',
+			'item_id'   => $g1,
+			'type'      => 'joined_group',
+			'recorded_time' => date( 'Y-m-d H:i:s', 1451944920 ),
+		) );
+		$a2 = $this->factory->activity->create( array(
+			'user_id'   => $u3,
+			'component' => 'groups',
+			'item_id'   => $g1,
+			'type'      => 'joined_group',
+			'recorded_time' => date( 'Y-m-d H:i:s', 1451944920 ),
+		) );
+
+		global $activities_template;
+		$reset_activities_template = $activities_template;
+
+		// Get activities in 'groups' scope
+		bp_has_activities( array(
+			'user_id' => $u1,
+			'scope' => 'groups',
+		) );
+
+		$found = $activities_template->activities;
+
+		// Clean up!
+		$activities_template = $reset_activities_template;
+
+		$this->assertEquals( array( $a2, $a1 ), wp_list_pluck( $found, 'id' ) );
+	}
+
+	/**
 	 * @group filter_query
 	 * @group BP_Activity_Query
 	 */
@@ -826,6 +909,7 @@ class BP_Tests_Activity_Template extends BP_UnitTestCase {
 	/**
 	 * @group filter_query
 	 * @group BP_Activity_Query
+	 * @group post_type_comment_activities
 	 */
 	function test_bp_has_activities_with_filter_query_compare_regex() {
 		$u1 = $this->factory->user->create();
@@ -1216,6 +1300,7 @@ class BP_Tests_Activity_Template extends BP_UnitTestCase {
 
 	/**
 	 * @group bp_has_activities
+	 * @group post_type_comment_activities
 	 */
 	public function test_bp_has_activities_with_type_new_blog_comments() {
 		add_filter( 'bp_disable_blogforum_comments', '__return_false' );
@@ -1344,6 +1429,89 @@ class BP_Tests_Activity_Template extends BP_UnitTestCase {
 		update_option( 'thread_comments', $tc );
 		update_option( 'thread_comments_depth', $tcd );
 		$activities_template = null;
+	}
+
+	/**
+	 * @group bp_activity_can_comment
+	 */
+	public function test_bp_activity_can_comment() {
+		global $activities_template;
+		$reset_activities_template = $activities_template;
+
+		$activities_template = new stdClass;
+		$activities_template->disable_blogforum_replies = true;
+		$activities_template->activity = (object) array( 'type' => 'activity_comment' );
+
+		$this->assertFalse( bp_activity_can_comment(), 'bp_activity_can_comment() should return false if the activity type is activity_comment' );
+
+		$types = array(
+			'new_blog_post',
+			'new_blog_comment',
+			'new_forum_topic',
+			'new_forum_post'
+		);
+
+		foreach ( $types as $type_false ) {
+			$activities_template->activity->type = $type_false;
+			$this->assertFalse( bp_activity_can_comment(), 'Comments about blog or forum posts/replies are disabled' );
+		}
+
+		$activities_template->disable_blogforum_replies = false;
+		add_filter( 'bp_disable_blogforum_comments', '__return_false' );
+
+		foreach ( $types as $type_true ) {
+			$activities_template->activity->type = $type_true;
+			$this->assertTrue( bp_activity_can_comment(), 'Comments about blog or forum posts/replies are enabled' );
+		}
+
+		remove_filter( 'bp_disable_blogforum_comments', '__return_false' );
+
+		// clean up!
+		$activities_template = $reset_activities_template;
+	}
+
+	/**
+	 * @group bp_activity_can_comment
+	 */
+	public function test_bp_activity_can_comment_post_type_activity() {
+		global $activities_template;
+		$bp = buddypress();
+
+		$reset_activities_template = $activities_template;
+		$reset_activity_track = $bp->activity->track;
+
+		$activities_template = new stdClass;
+		$activities_template->disable_blogforum_replies = true;
+
+		register_post_type( 'foo', array(
+			'label'   => 'foo',
+			'public'   => true,
+			'supports' => array( 'buddypress-activity' ),
+		) );
+
+		$bp->activity->track = bp_activity_get_post_types_tracking_args();
+
+		$activities_template->activity = (object) array( 'type' => 'new_foo' );
+
+		$this->assertTrue( bp_activity_can_comment(), 'If post type does not support comments, a post type activity can be commented' );
+
+		add_post_type_support( 'foo', 'comments' );
+
+		$bp->activity->track = bp_activity_get_post_types_tracking_args();
+
+		$this->assertFalse( bp_activity_can_comment(), 'If post type support comments, a post type activity cannot be commented' );
+
+		$bp_activity_support = (array) $bp->activity->track['new_foo'];
+		$bp_activity_support['activity_comment'] = true;
+
+		bp_activity_set_post_type_tracking_args( 'foo', $bp_activity_support );
+		$bp->activity->track = bp_activity_get_post_types_tracking_args();
+
+		$this->assertTrue( bp_activity_can_comment(), 'If post type supports activity comments, a post type activity can be commented' );
+
+		// clean up!
+		$activities_template = $reset_activities_template;
+		$bp->activity->track = $reset_activity_track;
 	}
 
 	/**

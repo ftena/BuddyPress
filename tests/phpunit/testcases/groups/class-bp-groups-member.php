@@ -256,7 +256,7 @@ class BP_Tests_BP_Groups_Member_TestCases extends BP_UnitTestCase {
 
 	/**
 	 * @group groups_reject_membership_request
- 	 * @group group_membership_requests
+	 * @group group_membership_requests
 	 * @group group_membership
 	 */
 	public function test_bp_groups_reject_membership_request_remove_request() {
@@ -990,7 +990,7 @@ class BP_Tests_BP_Groups_Member_TestCases extends BP_UnitTestCase {
 		$this->assertTrue( is_numeric( $member ) && $member > 0 );
 		// Check that the invite has been removed.
 		$invite = groups_check_user_has_invite( $u2, $g1, 'all' );
-		$this->assertTrue( is_null( $invite ) );
+		$this->assertFalse( $invite );
 	}
 
 	/**
@@ -1083,6 +1083,70 @@ class BP_Tests_BP_Groups_Member_TestCases extends BP_UnitTestCase {
 		) );
 
 		$this->assertTrue( empty( $invitees->results ) );
+	}
+
+	/**
+	 * @group groups_invite_user
+	 * @group group_invitations
+	 * @group group_membership
+	 */
+	public function test_groups_send_invites_fail_on_empty_group_id() {
+		$u1 = $this->factory->user->create();
+		$u2 = $this->factory->user->create();
+
+		// Create draft invitation with empty inviter_id
+		$invite_created = groups_invite_user( array(
+			'user_id'       => $u2,
+			'group_id'      => 0,
+			'inviter_id'    => $u1,
+			'date_modified' => bp_core_current_time(),
+			'is_confirmed'  => 0
+		) );
+
+		$this->assertFalse( $invite_created );
+	}
+
+	/**
+	 * @group groups_invite_user
+	 * @group group_invitations
+	 * @group group_membership
+	 */
+	public function test_groups_send_invites_fail_on_empty_user_id() {
+		$u1 = $this->factory->user->create();
+		$g1 = $this->factory->group->create( array( 'creator_id' => $u1 ) );
+
+		// Create draft invitation with empty inviter_id
+		$invite_created = groups_invite_user( array(
+			'user_id'       => 0,
+			'group_id'      => $g1,
+			'inviter_id'    => $u1,
+			'date_modified' => bp_core_current_time(),
+			'is_confirmed'  => 0
+		) );
+
+		$this->assertFalse( $invite_created );
+	}
+
+	/**
+	 * @group groups_invite_user
+	 * @group group_invitations
+	 * @group group_membership
+	 */
+	public function test_groups_send_invites_fail_on_empty_inviter_id() {
+		$u1 = $this->factory->user->create();
+		$u2 = $this->factory->user->create();
+		$g1 = $this->factory->group->create( array( 'creator_id' => $u1 ) );
+
+		// Create draft invitation with empty inviter_id
+		$invite_created = groups_invite_user( array(
+			'user_id'       => $u2,
+			'group_id'      => $g1,
+			'inviter_id'    => 0,
+			'date_modified' => bp_core_current_time(),
+			'is_confirmed'  => 0
+		) );
+
+		$this->assertFalse( $invite_created );
 	}
 
 	/**
@@ -1195,5 +1259,45 @@ class BP_Tests_BP_Groups_Member_TestCases extends BP_UnitTestCase {
 		// All users should now be group members.
 		$members = new BP_Group_Member_Query( array( 'group_id' => $g1 ) );
 		$this->assertEqualSets( array( $u1, $u2, $u3 ), $members->user_ids );
+	}
+
+	/**
+	 * @group total_group_count
+	 * @ticket BP6813
+	 */
+	public function test_total_group_count_should_return_integer() {
+		$this->assertInternalType( 'int', BP_Groups_Member::total_group_count( 123 ) );
+	}
+
+	/**
+	 * @group get_memberships_by_id
+	 */
+	public function test_get_memberships_by_id_with_single_id() {
+		$users = $this->factory->user->create_many( 2 );
+		$groups = $this->factory->group->create_many( 2 );
+
+		$m0 = $this->add_user_to_group( $users[0], $groups[0] );
+		$m1 = $this->add_user_to_group( $users[1], $groups[1] );
+
+		$found = BP_Groups_Member::get_memberships_by_id( $m0 );
+
+		$this->assertSame( 1, count( $found ) );
+		$this->assertEquals( $m0, $found[0]->id );
+	}
+
+	/**
+	 * @group get_memberships_by_id
+	 */
+	public function test_get_memberships_by_id_with_multiple_ids() {
+		$users = $this->factory->user->create_many( 2 );
+		$groups = $this->factory->group->create_many( 2 );
+
+		$m0 = $this->add_user_to_group( $users[0], $groups[0] );
+		$m1 = $this->add_user_to_group( $users[1], $groups[1] );
+
+		$found = BP_Groups_Member::get_memberships_by_id( array( $m0, $m1 ) );
+
+		$this->assertSame( 2, count( $found ) );
+		$this->assertEqualSets( array( $m0, $m1 ), wp_list_pluck( $found, 'id' ) );
 	}
 }

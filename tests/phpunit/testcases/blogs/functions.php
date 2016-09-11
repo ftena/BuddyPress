@@ -513,6 +513,7 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 
 	/**
 	 * @group bp_blogs_catch_transition_post_status
+	 * @group post_type_comment_activities
 	 */
 	public function test_update_blog_post_and_new_blog_comment_and_activity_comment_meta() {
 		// save the current user and override logged-in user
@@ -596,7 +597,8 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 
 	/**
 	 * @group bp_blogs_transition_activity_status
-	 * @group bp_blogs_remove_comment
+	 * @group bp_blogs_post_type_remove_comment
+	 * @group post_type_comment_activities
 	 */
 	public function test_bp_blogs_remove_comment_should_remove_spammed_activity_comment() {
 		// save the current user and override logged-in user
@@ -658,6 +660,48 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 	}
 
 	/**
+	 * @group bp_blogs_post_type_remove_comment
+	 * @group post_type_comment_activities
+	 */
+	public function test_bp_blogs_post_type_remove_comment() {
+		$old_user = get_current_user_id();
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+		$userdata = get_userdata( $u );
+
+		// create the blog post
+		$p = $this->factory->post->create( array(
+			'post_status' => 'publish',
+			'post_type' => 'post',
+			'post_title' => 'First title',
+		) );
+
+		$c = wp_new_comment( array(
+			'comment_post_ID'      => $p,
+			'comment_author'       => $userdata->user_nicename,
+			'comment_author_url'   => 'http://buddypress.org',
+			'comment_author_email' => $userdata->user_email,
+			'comment_content'      => 'this comment will be removed',
+			'comment_type'         => '',
+			'comment_parent'       => 0,
+			'user_id'              => $u,
+		) );
+
+		// An activity should exist
+		$a = bp_activity_get_activity_id( array(
+			'user_id' => $u,
+			'type'    => 'new_blog_comment'
+		) );
+
+		// now permanently delete the comment
+		wp_delete_comment( $c, true );
+
+		// The activity comment should no longer exist
+		$ac = bp_activity_get( array( 'in' => $a ) );
+		$this->assertTrue( empty( $ac['activities'] ) );
+	}
+
+	/**
 	 * @group bp_blogs_catch_transition_post_status
 	 */
 	public function test_bp_blogs_is_blog_trackable_false_publish_post() {
@@ -714,6 +758,7 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 	/**
 	 * @group bp_blogs_record_comment
 	 * @group unique
+	 * @group post_type_comment_activities
 	 */
 	public function test_bp_blogs_record_comment_no_duplicate_activity_comments() {
 		// save the current user and override logged-in user
@@ -777,6 +822,7 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 
 	/**
 	 * @group bp_blogs_record_comment
+	 * @group post_type_comment_activities
 	 */
 	public function test_bp_blogs_record_comment_should_record_parent_blog_post_activity_if_not_found() {
 		// Save the current user and override logged-in user
@@ -826,10 +872,108 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 			),
 		) );
 
+		remove_filter( 'bp_disable_blogforum_comments', '__return_false' );
+
 		// Assert that activity item for blog post was created after adding a comment
 		$this->assertNotNull( $a1, 'Activity item was not created for existing blog post when recording post comment.' );
 
 		$this->set_current_user( $old_user );
+	}
+
+	/**
+	 * @group bp_blogs_comment_sync_activity_comment
+	 * @group post_type_comment_activities
+	 */
+	public function test_bp_blogs_comment_sync_activity_comment_for_custom_post_type() {
+		if ( is_multisite() ) {
+			$b = $this->factory->blog->create();
+			switch_to_blog( $b );
+			add_filter( 'comment_flood_filter', '__return_false' );
+		} else {
+			$b = get_current_blog_id();
+		}
+
+		$u = $this->factory->user->create();
+		$userdata = get_userdata( $u );
+
+		$labels = array(
+			'name'                       => 'bars',
+			'singular_name'              => 'bar',
+		);
+
+		register_post_type( 'foo', array(
+			'labels'   => $labels,
+			'public'   => true,
+			'supports' => array( 'comments' ),
+		) );
+
+		add_post_type_support( 'foo', 'buddypress-activity' );
+
+		bp_activity_set_post_type_tracking_args( 'foo', array(
+			'comment_action_id' => 'new_foo_comment',
+		) );
+
+		add_filter( 'bp_disable_blogforum_comments', '__return_false' );
+
+		$p = $this->factory->post->create( array(
+			'post_author' => $u,
+			'post_type'   => 'foo',
+		) );
+
+		$a1 = bp_activity_get_activity_id( array(
+			'type'      => 'new_foo',
+			'filter'    => array(
+				'item_id' => $b,
+				'secondary_item_id' => $p
+			),
+		) );
+
+		$c = wp_new_comment( array(
+			'comment_post_ID'      => $p,
+			'comment_author'       => $userdata->user_nicename,
+			'comment_author_url'   => 'http://buddypress.org',
+			'comment_author_email' => $userdata->user_email,
+			'comment_content'      => 'this is a foo comment',
+			'comment_type'         => '',
+			'comment_parent'       => 0,
+			'user_id'              => $u,
+		) );
+
+		$a2 = bp_activity_new_comment( array(
+			'content'     => 'this should generate a new foo comment',
+			'user_id'     => $u,
+			'activity_id' => $a1,
+		) );
+
+		$activity_args = array(
+			'type'              => 'activity_comment',
+			'display_comments'  => 'stream',
+			'meta_query'        => array( array(
+				'key'       => 'bp_blogs_foo_comment_id',
+				'compare'   => 'exists',
+			) )
+		);
+
+		$a = bp_activity_get( $activity_args );
+		$aids = wp_list_pluck( $a['activities'], 'id' );
+		$cids = wp_list_pluck( get_approved_comments( $p ), 'comment_ID' );
+
+		foreach ( $aids as $aid ) {
+			$this->assertTrue( in_array( bp_activity_get_meta( $aid, 'bp_blogs_foo_comment_id' ), $cids ), 'The comment ID should be in the activity meta' );
+		}
+
+		foreach ( $cids as $cid ) {
+			$this->assertTrue( in_array( get_comment_meta( $cid, 'bp_activity_comment_id', true ), $aids ), 'The activity ID should be in the comment meta' );
+		}
+
+		_unregister_post_type( 'foo' );
+
+		if ( is_multisite() ) {
+			restore_current_blog();
+			remove_filter( 'comment_flood_filter', '__return_false' );
+		}
+
+		remove_filter( 'bp_disable_blogforum_comments', '__return_false' );
 	}
 
 	public function count_activity_comment_saved() {
@@ -838,6 +982,132 @@ class BP_Tests_Blogs_Functions extends BP_UnitTestCase {
 
 	public function count_post_comment_saved() {
 		$this->comment_saved_count += 1;
+	}
+
+	/**
+	 * @group bp_blogs_record_existing_blogs
+	 */
+	public function test_bp_blogs_record_existing_blogs_limit() {
+		if ( ! is_multisite() ) {
+			return;
+		}
+
+		$old_user = get_current_user_id();
+
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+
+		// Create three sites.
+		$this->factory->blog->create_many( 3, array(
+			'user_id' => $u
+		) );
+
+		// Record each site one at a time
+		bp_blogs_record_existing_blogs( array(
+			'limit' => 1
+		) );
+
+		// Assert!
+		$blogs = bp_blogs_get_blogs( array(
+			'user_id' => $u
+		) );
+		$this->assertSame( 3, (int) $blogs['total'] );
+
+		$this->set_current_user( $old_user );
+	}
+
+	/**
+	 * @group bp_blogs_remove_blog
+	 */
+	public function test_bp_blogs_remove_blog() {
+		if ( ! is_multisite() ) {
+			return;
+		}
+
+		$reset_post = $_POST;
+		$old_user = get_current_user_id();
+
+		// Simulate a new "BuddyPress generated" blog
+		$_POST['blog_public'] = 1;
+
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+
+		// Create three sites.
+		$b = $this->factory->blog->create( array(
+			'user_id' => $u
+		) );
+
+		$activity = bp_activity_get( array(
+			'filter' => array(
+				'object'     => 'blogs',
+				'action'     => 'new_blog',
+				'primary_id' => $b,
+			),
+		) );
+
+		$new_blog = array_map( 'intval', wp_list_pluck( $activity['activities'], 'item_id', 'id' ) );
+		$this->assertSame( $b, reset( $new_blog ) );
+
+		// Removing the blog should delete the activity and the blog association.
+		wpmu_delete_blog( $b );
+
+		$deleted = bp_activity_get( array(
+			'in' => array_keys( $new_blog ),
+		) );
+
+		$this->assertEmpty( $deleted['activities'] );
+		$this->assertEmpty( BP_Blogs_Blog::is_recorded( $b ) );
+
+		$_POST = $reset_post;
+		$this->set_current_user( $old_user );
+	}
+
+	/**
+	 * @group bp_blogs_remove_blog_for_user
+	 */
+	public function test_bp_blogs_remove_blog_for_user_is_contributor() {
+		if ( ! is_multisite() ) {
+			return;
+		}
+
+		$reset_post = $_POST;
+		$old_user = get_current_user_id();
+
+		// Simulate a new "BuddyPress generated" blog
+		$_POST['blog_public'] = 1;
+
+		$u = $this->factory->user->create();
+		$this->set_current_user( $u );
+
+		// Create three sites.
+		$b = $this->factory->blog->create( array(
+			'user_id' => $u
+		) );
+
+		$u2 = $this->factory->user->create();
+		add_user_to_blog( $b, $u2, 'contributor' );
+
+		$u2_blogs = BP_Blogs_Blog::get_blog_ids_for_user( $u2 );
+		$this->assertContains( $b, $u2_blogs, 'The user should be associated to the blog as he is a contributor' );
+
+		remove_user_from_blog( $u2, $b );
+		$u2_blogs = BP_Blogs_Blog::get_blog_ids_for_user( $u2 );
+		$this->assertNotContains( $b, $u2_blogs, 'The user should not be associated anymore to the blog' );
+
+		$activity = bp_activity_get( array(
+			'filter' => array(
+				'object'     => 'blogs',
+				'action'     => 'new_blog',
+				'primary_id' => $b,
+			),
+		) );
+
+		$new_blog = array_map( 'intval', wp_list_pluck( $activity['activities'], 'item_id', 'id' ) );
+		$this->assertSame( $b, reset( $new_blog ), 'The new_blog activity should not be deleted when a contributor is removed from the blog.' );
+
+		$_POST = $reset_post;
+		$this->set_current_user( $old_user );
 	}
 
 	protected function activity_exists_for_post( $post_id ) {

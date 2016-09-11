@@ -53,4 +53,9 @@ class BP_Tests_Core_Caps extends BP_UnitTestCase {
 
 		return $allcaps;
 	}
+
+	public function check_cap_args( $caps, $cap, $user_id, $args ) {
+		$this->test_args = $args;
+		return $caps;
+	}
 }

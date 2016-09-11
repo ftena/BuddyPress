@@ -4,6 +4,7 @@
  *
  * @package BuddyPress
  * @subpackage XProfileClasses
+ * @since 2.0.0
  */
 
 // Exit if accessed directly.
@@ -96,13 +97,19 @@ class BP_XProfile_Field_Type_Textarea extends BP_XProfile_Field_Type {
 			 *     @type bool $teeny         Whether to use the teeny version of TinyMCE. Default true.
 			 *     @type bool $media_buttons Whether to show media buttons. Default false.
 			 *     @type bool $quicktags     Whether to show the quicktags buttons. Default true.
+			 *     @type int  $textarea_rows Number of rows to display in the editor. Defaults to 1 in the
+			 *                               'admin' context, and 10 in the 'edit' context.
 			 * }
+			 * @param string $context The display context. 'edit' when the markup is intended for the
+			 *                        profile edit screen, 'admin' when intended for the Profile Fields
+			 *                        Dashboard panel.
 			 */
 			$editor_args = apply_filters( 'bp_xprofile_field_type_textarea_editor_args', array(
 				'teeny'         => true,
 				'media_buttons' => false,
 				'quicktags'     => true,
-			) );
+				'textarea_rows' => 10,
+			), 'edit' );
 
 			wp_editor(
 				bp_get_the_profile_field_edit_value(),
@@ -141,7 +148,8 @@ class BP_XProfile_Field_Type_Textarea extends BP_XProfile_Field_Type {
 				'teeny'         => true,
 				'media_buttons' => false,
 				'quicktags'     => true,
-			) );
+				'textarea_rows' => 1,
+			), 'admin' );
 
 			wp_editor(
 				'',
